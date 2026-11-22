@@ -48,10 +48,10 @@ fun formatBucketTick(startAt: Long, unit: StatsBucketUnit, zone: ZoneId): String
 }
 
 /** Full, human label for the bar the user just tapped. */
-fun formatBucketTitle(startAt: Long, unit: StatsBucketUnit, zone: ZoneId): String {
+fun formatBucketTitle(startAt: Long, unit: StatsBucketUnit, zone: ZoneId, timePattern: String = "HH:mm"): String {
 	val time = Instant.ofEpochMilli(startAt).atZone(zone)
 	val pattern = when (unit) {
-		StatsBucketUnit.HOUR -> "EEE, HH:mm"
+		StatsBucketUnit.HOUR -> "EEE, $timePattern"
 		StatsBucketUnit.DAY -> "EEE, d MMM"
 		StatsBucketUnit.WEEK -> "d MMM"
 		StatsBucketUnit.MONTH -> "LLLL yyyy"

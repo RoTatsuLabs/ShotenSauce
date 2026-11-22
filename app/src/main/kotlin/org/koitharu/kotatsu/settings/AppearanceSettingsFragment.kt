@@ -323,6 +323,7 @@ private fun AppearanceScreen(
 	var hapticFeedback by rememberBooleanPref(AppSettings.KEY_HAPTIC_FEEDBACK, true)
 	var hideStatusBar by rememberBooleanPref(AppSettings.KEY_HIDE_STATUS_BAR, false)
 	var locale by rememberStringPref(AppSettings.KEY_APP_LOCALE, "")
+	var timeFormat by rememberStringPref(AppSettings.KEY_TIME_FORMAT, org.koitharu.kotatsu.core.util.TimeFormat.SYSTEM)
 	var listMode by rememberStringPref(AppSettings.KEY_LIST_MODE, ListMode.GRID.name)
 	var gridSize by rememberIntPref(AppSettings.KEY_GRID_SIZE, 100)
 	val gridWidth = remember { GridColumns.referenceWidth(ctx.resources) }
@@ -450,6 +451,26 @@ private fun AppearanceScreen(
 						entryValues = localeValues,
 						selectedValue = locale,
 						onValueChange = { locale = it },
+						icon = R.drawable.ic_language,
+
+						shape = pos.shape,
+					)
+				}
+				item { pos ->
+					ListSettingsItem(
+						title = stringResource(R.string.time_format),
+						entries = listOf(
+							stringResource(R.string.follow_system),
+							stringResource(R.string.time_format_12),
+							stringResource(R.string.time_format_24),
+						),
+						entryValues = listOf(
+							org.koitharu.kotatsu.core.util.TimeFormat.SYSTEM,
+							org.koitharu.kotatsu.core.util.TimeFormat.HOURS_12,
+							org.koitharu.kotatsu.core.util.TimeFormat.HOURS_24,
+						),
+						selectedValue = timeFormat,
+						onValueChange = { timeFormat = it },
 						icon = R.drawable.ic_language,
 
 						shape = pos.shape,

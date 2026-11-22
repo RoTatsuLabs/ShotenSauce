@@ -47,7 +47,7 @@ class ReaderInfoBarView @JvmOverloads constructor(
 
 	private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.SUBPIXEL_TEXT_FLAG)
 	private val textBounds = Rect()
-	private val timeFormat = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)
+	private val timeFormat = org.koitharu.kotatsu.core.util.TimeFormat.formatter(context)
 	private val systemStateReceiver = SystemStateReceiver()
 	private var insetLeft: Int = 0
 	private var insetRight: Int = 0

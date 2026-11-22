@@ -181,7 +181,7 @@ fun StatsScreen(
 					)
 					Text(
 						text = if (bucket != null) {
-							formatBucketTitle(bucket.startAt, stats.bucketUnit, zone)
+							formatBucketTitle(bucket.startAt, stats.bucketUnit, zone, org.koitharu.kotatsu.core.util.TimeFormat.pattern(LocalContext.current))
 						} else if (period == StatsPeriod.ALL) {
 							// "All time" has no fixed length — say how far back the bars actually reach.
 							resources.getQuantityString(
