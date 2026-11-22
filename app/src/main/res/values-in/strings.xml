@@ -1518,4 +1518,8 @@
     <string name="notes_markdown_hint">Mendukung Markdown: **tebal**, *miring*, daftar, tautan</string>
     <string name="details_cover_color">Warna dari cover</string>
     <string name="details_cover_color_summary">Warnai halaman detail dengan warna yang diambil dari cover</string>
+    <string name="backup_job_sending_telegram">Mengirim backup ke Telegram</string>
+    <string name="backup_job_busy">Backup atau restore sedang berjalan</string>
+    <string name="details_panorama_cover">Cover lebar</string>
+    <string name="details_panorama_cover_summary">Tampilkan cover lebar dengan bentuk aslinya di samping judul, bukan dipotong jadi potret</string>
 </resources>

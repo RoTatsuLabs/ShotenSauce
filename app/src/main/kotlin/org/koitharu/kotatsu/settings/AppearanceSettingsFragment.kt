@@ -324,6 +324,7 @@ private fun AppearanceScreen(
 	var hideStatusBar by rememberBooleanPref(AppSettings.KEY_HIDE_STATUS_BAR, false)
 	var locale by rememberStringPref(AppSettings.KEY_APP_LOCALE, "")
 	var coverColors by rememberBooleanPref(AppSettings.KEY_DETAILS_COVER_COLOR, true)
+	var panoramaCover by rememberBooleanPref(AppSettings.KEY_DETAILS_PANORAMA_COVER, true)
 	var timeFormat by rememberStringPref(AppSettings.KEY_TIME_FORMAT, org.koitharu.kotatsu.core.util.TimeFormat.SYSTEM)
 	var listMode by rememberStringPref(AppSettings.KEY_LIST_MODE, ListMode.GRID.name)
 	var gridSize by rememberIntPref(AppSettings.KEY_GRID_SIZE, 100)
@@ -483,6 +484,16 @@ private fun AppearanceScreen(
 						subtitle = stringResource(R.string.details_cover_color_summary),
 						checked = coverColors,
 						onCheckedChange = { coverColors = it },
+						icon = R.drawable.ic_eye,
+						shape = pos.shape,
+					)
+				}
+				item { pos ->
+					SwitchSettingsItem(
+						title = stringResource(R.string.details_panorama_cover),
+						subtitle = stringResource(R.string.details_panorama_cover_summary),
+						checked = panoramaCover,
+						onCheckedChange = { panoramaCover = it },
 						icon = R.drawable.ic_eye,
 						shape = pos.shape,
 					)

@@ -54,6 +54,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.setValue
 import coil3.ImageLoader
 import org.koitharu.kotatsu.details.ui.scrobbling.labelResId
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerService
@@ -79,6 +82,9 @@ private val COVER_WIDTH = 158.dp
 private val COVER_HEIGHT = 236.dp
 private val COMPACT_COVER_WIDTH = 120.dp
 private val COMPACT_COVER_HEIGHT = 178.dp
+private const val LANDSCAPE_RATIO = 1.1f
+private const val LANDSCAPE_COVER_SHARE = 0.52f
+private const val LANDSCAPE_MAX_RATIO = 2.2f
 
 @Composable
 internal fun HeroSection(
@@ -91,6 +97,11 @@ internal fun HeroSection(
 	coverRefreshes: Int,
 	actions: DetailsExpressiveActions,
 ) {
+	// Width over height of the loaded cover; 0 until it is known. A wide (panorama) cover keeps its shape
+	// instead of being cropped into the portrait frame.
+	var coverRatio by remember(coverUrl, coverRefreshes) { androidx.compose.runtime.mutableFloatStateOf(0f) }
+	val panoramaEnabled by rememberBooleanPref(AppSettings.KEY_DETAILS_PANORAMA_COVER, true)
+	val isLandscape = panoramaEnabled && coverRatio >= LANDSCAPE_RATIO
 	val nsfwLabel = when (manga.contentRating) {
 		ContentRating.SUGGESTIVE -> "16+"
 		ContentRating.ADULT -> "18+"
@@ -109,13 +120,21 @@ internal fun HeroSection(
 				coverUrl = coverUrl,
 				coverRefreshes = coverRefreshes,
 				imageLoader = imageLoader,
-				modifier = Modifier
-					.width(COVER_WIDTH)
-					.height(COVER_HEIGHT),
+				modifier = if (isLandscape) {
+					Modifier
+						.fillMaxWidth()
+						.widthIn(max = COVER_HEIGHT * coverRatio.coerceAtMost(LANDSCAPE_MAX_RATIO))
+						.aspectRatio(coverRatio.coerceAtMost(LANDSCAPE_MAX_RATIO))
+				} else {
+					Modifier
+						.width(COVER_WIDTH)
+						.height(COVER_HEIGHT)
+				},
 				corner = 24.dp,
 				nsfwLabel = null,
 				forceRefresh = details?.isLoaded == true,
 				actions = actions,
+				onAspectRatio = { coverRatio = it },
 			)
 			Spacer(Modifier.height(20.dp))
 			HeroTexts(centered = true, manga = manga, accent = accent, actions = actions, ratingLabel = nsfwLabel)
@@ -137,26 +156,41 @@ internal fun HeroSection(
 					coverUrl = coverUrl,
 					coverRefreshes = coverRefreshes,
 					imageLoader = imageLoader,
-					modifier = Modifier.width(COMPACT_COVER_WIDTH),
+					modifier = Modifier,
 					corner = 20.dp,
 					nsfwLabel = nsfwLabel,
 					forceRefresh = details?.isLoaded == true,
 					actions = actions,
+					onAspectRatio = { coverRatio = it },
 				)
 				Column {
 					HeroTexts(centered = false, manga = manga, accent = accent, actions = actions, ratingLabel = null)
 				}
 			},
 		) { measurables, constraints ->
-			val remainingWidth = (constraints.maxWidth - compactCoverWidthPx - spacingPx).coerceAtLeast(0)
-			val textPlaceable = measurables[1].measure(Constraints.fixedWidth(remainingWidth))
-			val coverHeight = maxOf(compactCoverHeightPx, textPlaceable.height)
-			val coverPlaceable = measurables[0].measure(Constraints.fixed(compactCoverWidthPx, coverHeight))
+			if (isLandscape) {
+				// A wide cover keeps its own shape and takes about half the row, the texts sit beside it
+				val ratio = coverRatio.coerceAtMost(LANDSCAPE_MAX_RATIO)
+				val coverWidthPx = ((constraints.maxWidth - spacingPx) * LANDSCAPE_COVER_SHARE).toInt()
+				val coverHeightPx = (coverWidthPx / ratio).toInt()
+				val textWidth = (constraints.maxWidth - coverWidthPx - spacingPx).coerceAtLeast(0)
+				val text = measurables[1].measure(Constraints.fixedWidth(textWidth))
+				val cover = measurables[0].measure(Constraints.fixed(coverWidthPx, coverHeightPx))
+				layout(constraints.maxWidth, maxOf(coverHeightPx, text.height)) {
+					cover.placeRelative(0, 0)
+					text.placeRelative(coverWidthPx + spacingPx, 0)
+				}
+			} else {
+				val remainingWidth = (constraints.maxWidth - compactCoverWidthPx - spacingPx).coerceAtLeast(0)
+				val textPlaceable = measurables[1].measure(Constraints.fixedWidth(remainingWidth))
+				val coverHeight = maxOf(compactCoverHeightPx, textPlaceable.height)
+				val coverPlaceable = measurables[0].measure(Constraints.fixed(compactCoverWidthPx, coverHeight))
 
-			layout(constraints.maxWidth, coverHeight) {
-				coverPlaceable.placeRelative(0, 0)
-				// Sit the texts on the cover's bottom edge, with the buttons right beneath them
-				textPlaceable.placeRelative(compactCoverWidthPx + spacingPx, coverHeight - textPlaceable.height)
+				layout(constraints.maxWidth, coverHeight) {
+					coverPlaceable.placeRelative(0, 0)
+					// Sit the texts on the cover's bottom edge, with the buttons right beneath them
+					textPlaceable.placeRelative(compactCoverWidthPx + spacingPx, coverHeight - textPlaceable.height)
+				}
 			}
 		}
 	}
@@ -176,6 +210,7 @@ internal fun CoverCard(
 	nsfwLabel: String?,
 	forceRefresh: Boolean,
 	actions: DetailsExpressiveActions,
+	onAspectRatio: (Float) -> Unit = {},
 ) {
 	val ctx = LocalContext.current
 	Surface(
@@ -224,6 +259,10 @@ internal fun CoverCard(
 				imageLoader = imageLoader,
 				contentDescription = null,
 				contentScale = ContentScale.Crop,
+				onSuccess = { state ->
+					val size = state.painter.intrinsicSize
+					if (size.width > 0f && size.height > 0f) onAspectRatio(size.width / size.height)
+				},
 				modifier = Modifier
 					.fillMaxSize()
 					.clickable { actions.onCoverClick(manga) }
