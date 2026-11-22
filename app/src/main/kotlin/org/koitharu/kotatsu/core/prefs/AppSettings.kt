@@ -1695,6 +1695,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_PREFETCH_CONTENT = "prefetch_content"
 		const val KEY_APP_LOCALE = "app_locale"
 		const val KEY_TIME_FORMAT = "time_format"
+		const val KEY_DETAILS_COVER_COLOR = "details_cover_color"
 		const val KEY_SOURCES_GRID = "sources_grid"
 		const val KEY_SOURCES_GRID_COLUMNS = "sources_grid_columns"
 		const val KEY_TIPS_CLOSED = "tips_closed"

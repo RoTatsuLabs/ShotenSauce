@@ -2,6 +2,9 @@
 
 package org.koitharu.kotatsu.details.ui
 
+import org.koitharu.kotatsu.settings.compose.rememberBooleanPref
+import org.koitharu.kotatsu.core.prefs.AppSettings
+import androidx.compose.ui.graphics.luminance
 import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -99,7 +102,15 @@ fun DetailsExpressiveScreen(
 	val manga = details?.toManga()
 
 	val scheme = MaterialTheme.colorScheme
-	val accentColor = scheme.primary
+	val coverColorsEnabled by rememberBooleanPref(AppSettings.KEY_DETAILS_COVER_COLOR, true)
+	val coverAccent = rememberCoverAccent(
+		imageLoader = imageLoader,
+		coverUrl = coverUrl,
+		coverRefreshes = coverRefreshes,
+		isDark = scheme.surface.luminance() < 0.5f,
+		enabled = coverColorsEnabled,
+	)
+	val accentColor = coverAccent ?: scheme.primary
 	val scrollState = rememberScrollState()
 	val centered = style != DetailsUiMode.COMPACT
 

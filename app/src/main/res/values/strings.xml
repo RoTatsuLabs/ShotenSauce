@@ -1595,4 +1595,9 @@
     <string name="time_format">Time format</string>
     <string name="time_format_12">12-hour</string>
     <string name="time_format_24">24-hour</string>
+    <string name="notes">Notes</string>
+    <string name="notes_hint">Write a note about this title</string>
+    <string name="notes_markdown_hint">Markdown is supported: **bold**, *italic*, lists, links</string>
+    <string name="details_cover_color">Colours from the cover</string>
+    <string name="details_cover_color_summary">Tint the title details with a colour taken from the cover</string>
 </resources>

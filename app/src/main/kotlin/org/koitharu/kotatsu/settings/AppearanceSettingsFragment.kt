@@ -323,6 +323,7 @@ private fun AppearanceScreen(
 	var hapticFeedback by rememberBooleanPref(AppSettings.KEY_HAPTIC_FEEDBACK, true)
 	var hideStatusBar by rememberBooleanPref(AppSettings.KEY_HIDE_STATUS_BAR, false)
 	var locale by rememberStringPref(AppSettings.KEY_APP_LOCALE, "")
+	var coverColors by rememberBooleanPref(AppSettings.KEY_DETAILS_COVER_COLOR, true)
 	var timeFormat by rememberStringPref(AppSettings.KEY_TIME_FORMAT, org.koitharu.kotatsu.core.util.TimeFormat.SYSTEM)
 	var listMode by rememberStringPref(AppSettings.KEY_LIST_MODE, ListMode.GRID.name)
 	var gridSize by rememberIntPref(AppSettings.KEY_GRID_SIZE, 100)
@@ -473,6 +474,16 @@ private fun AppearanceScreen(
 						onValueChange = { timeFormat = it },
 						icon = R.drawable.ic_language,
 
+						shape = pos.shape,
+					)
+				}
+				item { pos ->
+					SwitchSettingsItem(
+						title = stringResource(R.string.details_cover_color),
+						subtitle = stringResource(R.string.details_cover_color_summary),
+						checked = coverColors,
+						onCheckedChange = { coverColors = it },
+						icon = R.drawable.ic_eye,
 						shape = pos.shape,
 					)
 				}
