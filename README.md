@@ -1,8 +1,8 @@
-<p align="center">
-  <img src="assets/app-icon-dark.svg" alt="ShotenSauce dark mode app icon" width="112" />
-</p>
-
 <h1 align="center">ShotenSauce</h1>
+
+<p align="center">
+  <img src="assets/app-banner.png" alt="ShotenSauce" width="100%" />
+</p>
 
 <p align="center">
   A lightweight, modern comic and novel reader for Android with a beautiful Material 3 Expressive design. Supports Mihon and LNReader extensions.
@@ -44,19 +44,7 @@ ShotenSauce is a personal fork, built for my own use and shared as is. It takes 
 ## Screenshots
 
 <p align="center">
-  <img src="assets/main_favorites-preview.webp" alt="ShotenSauce favorites screen" width="31%" />
-  <img src="assets/feed-preview.webp" alt="ShotenSauce feed screen" width="31%" />
-  <img src="assets/settings-preview.webp" alt="ShotenSauce settings screen" width="31%" />
-  <img src="assets/extension_page-preview.webp" alt="ShotenSauce source browsing screen" width="31%" />
-  <img src="assets/manga_details_page-preview.webp" alt="ShotenSauce details screen" width="31%" />
-  <img src="assets/chapters_list-preview.webp" alt="ShotenSauce chapter list" width="31%" />
-  <img src="assets/paged_reading_ui-preview.webp" alt="ShotenSauce manga reading screen" width="31%" />
-  <img src="assets/reading_ui-preview.webp" alt="ShotenSauce manhwa reading screen" width="31%" />
-  <img src="assets/novel_reading_ui-preview.webp" alt="ShotenSauce novel reading screen" width="31%" />
-</p>
-
-<p align="center">
-  <sub>Favorites | Feed | Settings | Source Browsing | Details | Chapters | Manga Reader | Webtoon Reader | Novel Reader</sub>
+  <img src="assets/app-features.png" alt="ShotenSauce features" width="100%" />
 </p>
 
 ## Highlights
