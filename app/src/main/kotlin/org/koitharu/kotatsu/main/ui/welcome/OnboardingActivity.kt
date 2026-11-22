@@ -24,6 +24,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import dagger.hilt.android.AndroidEntryPoint
 import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
+import org.koitharu.kotatsu.backup.local.ui.restore.MihonRestoreService
 import org.koitharu.kotatsu.backup.local.ui.restore.RestoreDialogFragment
 import org.koitharu.kotatsu.core.nav.router
 import org.koitharu.kotatsu.core.prefs.ColorScheme
@@ -56,7 +58,14 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
     private val restoreTachiyomiLauncher = registerForActivityResult(
         ActivityResultContracts.OpenDocument(),
     ) { uri ->
-        if (uri != null) viewModel.restoreBackup(uri)
+        if (uri != null) {
+            if (BackupJobs.isBusy) {
+                Toast.makeText(this, R.string.backup_job_busy, Toast.LENGTH_SHORT).show()
+            } else if (MihonRestoreService.start(this, uri)) {
+                Toast.makeText(this, R.string.restoring_backup, Toast.LENGTH_SHORT).show()
+                syncStepDone++
+            }
+        }
     }
 
     private val restoreDropSauceLauncher = registerForActivityResult(
@@ -82,16 +91,10 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
         setContentView(ActivityOnboardingBinding.inflate(layoutInflater))
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        viewModel.onBackupRestored.observeEvent(this) { result ->
-            val text = if (result.error != null) {
-                result.error.getDisplayMessage(resources)
-            } else {
-                syncStepDone++
-                getString(R.string.data_restored_success)
-            }
-            Toast.makeText(this, text, Toast.LENGTH_LONG).show()
-            // Tachiyomi/Mihon backup referenced extensions that aren't installed — prompt to install.
-            result.report?.missingSources?.let { showExtensionInstallPromptDialog(it) }
+        // The Mihon restore runs in a service (progress notification, cancel); once it ends,
+        // offer the extensions the backup referenced but that aren't installed.
+        viewModel.onRestoreCompleted.observeEvent(this) { report ->
+            showExtensionInstallPromptDialog(report.missingSources)
         }
         // A restored Kotatsu-fork (DropSauce) backup auto-migrates in the background; surface it here.
         migrationManager.onStarted.observeEvent(this) {

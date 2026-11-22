@@ -17,6 +17,7 @@ import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.backup.local.data.LocalBackupRepository
 import org.koitharu.kotatsu.backup.local.domain.BackupSection
 import org.koitharu.kotatsu.backup.local.ui.BaseBackupRestoreService
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
 import org.koitharu.kotatsu.core.nav.AppRouter
 import org.koitharu.kotatsu.core.util.ext.checkNotificationPermission
 import org.koitharu.kotatsu.core.util.ext.powerManager
@@ -59,21 +60,20 @@ class RestoreService : BaseBackupRestoreService() {
 			runCatching { BackupSection.valueOf(name) }.getOrNull()
 		}.orEmpty()
 		require(sections.isNotEmpty()) { "No sections selected" }
-		applicationContext.powerManager.withPartialWakeLock(TAG) {
+		runExclusive(BackupJobs.Kind.RESTORE) {
 			val progress = MutableStateFlow(Progress.INDETERMINATE)
-			val progressUpdateJob = if (applicationContext.checkNotificationPermission(CHANNEL_ID)) {
-				launch {
-					progress.collect {
+			val progressUpdateJob = launch {
+				progress.collect {
+					BackupJobs.update(it)
+					if (applicationContext.checkNotificationPermission(CHANNEL_ID)) {
 						notificationManager.notify(FOREGROUND_NOTIFICATION_ID, buildNotification(it))
 					}
 				}
-			} else {
-				null
 			}
 			val result = ZipInputStream(contentResolver.openInputStream(source)).use { input ->
 				repository.restoreBackup(input, sections, progress)
 			}
-			progressUpdateJob?.cancelAndJoin()
+			progressUpdateJob.cancelAndJoin()
 			showResultNotification(source, result)
 			// If the restored backup came from another Kotatsu fork (it carries built-in source
 			// names this app doesn't have), auto-convert its library onto the matching Mihon

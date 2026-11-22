@@ -18,9 +18,18 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.await
+import androidx.work.workDataOf
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.launch
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.ExistingWorkPolicy
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
+import org.koitharu.kotatsu.backup.local.ui.BackupCancelReceiver
 import kotlinx.coroutines.flow.MutableStateFlow
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.backup.local.data.LocalBackupRepository
@@ -55,10 +64,44 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 
 	private val notificationManager by lazy { NotificationManagerCompat.from(applicationContext) }
 
+	@Volatile
+	private var currentProgress = Progress.INDETERMINATE
+
+	@Volatile
+	private var isTelegramOnly = false
+
 	override suspend fun doWork(): Result {
+		// The device backup and the Telegram one run on their own schedules, each as its own work
+		val target = inputData.getString(KEY_TARGET)
+		val saveLocally = target != TARGET_TELEGRAM && settings.periodicalBackupDirectory != null
+		val sendToTelegram = target != TARGET_LOCAL && settings.isBackupTelegramConfigured
+		if (!saveLocally && !sendToTelegram) {
+			return Result.success()
+		}
+		isTelegramOnly = !saveLocally
+		val job = currentCoroutineContext()[Job]
+		val kind = if (saveLocally) BackupJobs.Kind.SCHEDULED else BackupJobs.Kind.TELEGRAM
+		// Another backup or restore is running: try again later instead of running two at once
+		if (!BackupJobs.tryAcquire(kind) { job?.cancel() }) {
+			return Result.retry()
+		}
+		try {
+			return runBackup(saveLocally, sendToTelegram)
+		} finally {
+			BackupJobs.release()
+		}
+	}
+
+	private suspend fun updateProgress(progress: Progress) {
+		currentProgress = progress
+		BackupJobs.update(progress)
+		if (applicationContext.checkNotificationPermission(BaseBackupRestoreService.CHANNEL_ID)) {
+			trySetForeground()
+		}
+	}
+
+	private suspend fun runBackup(saveLocally: Boolean, sendToTelegram: Boolean): Result {
 		trySetForeground()
-		val saveLocally = settings.periodicalBackupDirectory != null
-		val sendToTelegram = settings.isBackupTelegramConfigured
 		val localSections = settings.backupSections
 		val telegramSections = settings.backupTelegramSections
 		val files = ArrayList<File>(2)
@@ -80,6 +123,7 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 						createBackupFile(telegramSections).also(files::add)
 					}
 					fileName = fileName ?: telegramFile.name
+					updateProgress(Progress.INDETERMINATE)
 					telegramUploader.send(telegramFile)
 				} catch (e: CancellationException) {
 					throw e
@@ -105,16 +149,24 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 		if (telegramError != null) {
 			postErrorNotification(telegramError)
 		} else {
-			postCompletionNotification(outputUri?.lastPathSegment ?: fileName)
+			postCompletionNotification(outputUri?.lastPathSegment ?: fileName, telegramOnly = !saveLocally)
 		}
 		return Result.success()
 	}
 
 	private suspend fun createBackupFile(sections: Set<BackupSection>): File {
 		val file = BackupUtils.createTempFile(applicationContext)
+		val progress = MutableStateFlow(Progress.INDETERMINATE)
 		try {
-			ZipOutputStream(file.outputStream()).use { output ->
-				repository.createBackup(output, MutableStateFlow(Progress.INDETERMINATE), sections)
+			coroutineScope {
+				val updateJob = launch { progress.collect { updateProgress(it) } }
+				try {
+					ZipOutputStream(file.outputStream()).use { output ->
+						repository.createBackup(output, progress, sections)
+					}
+				} finally {
+					updateJob.cancel()
+				}
 			}
 		} catch (e: Throwable) {
 			file.delete()
@@ -125,7 +177,7 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 
 	override suspend fun getForegroundInfo(): ForegroundInfo {
 		BaseBackupRestoreService.createNotificationChannel(applicationContext)
-		val notification = buildOngoingNotification()
+		val notification = buildOngoingNotification(currentProgress)
 		return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
 			ForegroundInfo(
 				FOREGROUND_NOTIFICATION_ID,
@@ -137,24 +189,45 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 		}
 	}
 
-	private fun buildOngoingNotification(): Notification {
+	private fun buildOngoingNotification(progress: Progress): Notification {
 		return NotificationCompat.Builder(applicationContext, BaseBackupRestoreService.CHANNEL_ID)
-			.setContentTitle(applicationContext.getString(R.string.creating_backup))
-			.setPriority(NotificationCompat.PRIORITY_MIN)
+			.setContentTitle(
+				applicationContext.getString(
+					if (isTelegramOnly) R.string.backup_job_sending_telegram else R.string.creating_backup,
+				),
+			)
+			.setPriority(NotificationCompat.PRIORITY_DEFAULT)
 			.setDefaults(0)
 			.setSilent(true)
 			.setOngoing(true)
-			.setProgress(0, 0, true)
-			.setSmallIcon(R.drawable.general_notification)
-			.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFERRED)
+			.setOnlyAlertOnce(true)
+			.setProgress(
+				progress.total.coerceAtLeast(0),
+				progress.progress.coerceAtLeast(0),
+				progress.isIndeterminate,
+			)
+			.setContentText(
+				if (progress.isIndeterminate) {
+					applicationContext.getString(R.string.processing_)
+				} else {
+					applicationContext.getString(R.string.fraction_pattern, progress.progress, progress.total)
+				},
+			)
+			.setSmallIcon(android.R.drawable.stat_sys_upload)
+			.setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
 			.setCategory(NotificationCompat.CATEGORY_PROGRESS)
+			.addAction(
+				androidx.appcompat.R.drawable.abc_ic_clear_material,
+				applicationContext.getString(android.R.string.cancel),
+				BackupCancelReceiver.createIntent(applicationContext),
+			)
 			.build()
 	}
 
-	private fun postCompletionNotification(name: String?) {
+	private fun postCompletionNotification(name: String?, telegramOnly: Boolean) {
 		if (!applicationContext.checkNotificationPermission(BaseBackupRestoreService.CHANNEL_ID)) return
 		val notification = NotificationCompat.Builder(applicationContext, BaseBackupRestoreService.CHANNEL_ID)
-			.setContentTitle(applicationContext.getString(R.string.backup_saved))
+			.setContentTitle(applicationContext.getString(if (telegramOnly) R.string.backup_telegram_sent else R.string.backup_saved))
 			.setContentText(name)
 			.setSmallIcon(R.drawable.general_notification)
 			.setPriority(NotificationCompat.PRIORITY_DEFAULT)
@@ -194,9 +267,19 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 	) : PeriodicWorkScheduler {
 
 		override suspend fun schedule() {
-			val frequencyMillis = settings.periodicalBackupFrequencyMillis
-			if (frequencyMillis <= 0L || (settings.periodicalBackupDirectory == null && !settings.isBackupTelegramConfigured)) {
-				return unschedule()
+			val deviceFrequency = if (settings.periodicalBackupDirectory != null) {
+				settings.periodicalBackupFrequencyMillis
+			} else {
+				0L
+			}
+			scheduleTarget(TARGET_LOCAL, TAG, deviceFrequency)
+			scheduleTarget(TARGET_TELEGRAM, TAG_TELEGRAM, settings.telegramBackupFrequencyMillis)
+		}
+
+		private suspend fun scheduleTarget(target: String, tag: String, frequencyMillis: Long) {
+			if (frequencyMillis <= 0L) {
+				workManager.cancelUniqueWork(tag).await()
+				return
 			}
 			val constraints = Constraints.Builder()
 				.setRequiresStorageNotLow(true)
@@ -204,28 +287,47 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 				.build()
 			val request = PeriodicWorkRequestBuilder<PeriodicalBackupWorker>(frequencyMillis, TimeUnit.MILLISECONDS)
 				.setConstraints(constraints)
-				.addTag(TAG)
+				.setInputData(workDataOf(KEY_TARGET to target))
+				.addTag(tag)
 				.setBackoffCriteria(BackoffPolicy.LINEAR, 30, TimeUnit.MINUTES)
 				.build()
 			workManager
-				.enqueueUniquePeriodicWork(TAG, ExistingPeriodicWorkPolicy.UPDATE, request)
+				.enqueueUniquePeriodicWork(tag, ExistingPeriodicWorkPolicy.UPDATE, request)
 				.await()
 		}
 
 		override suspend fun unschedule() {
 			workManager.cancelUniqueWork(TAG).await()
+			workManager.cancelUniqueWork(TAG_TELEGRAM).await()
 		}
 
 		override suspend fun isScheduled(): Boolean {
-			return workManager.awaitUniqueWorkInfoByName(TAG).any { !it.state.isFinished }
+			return listOf(TAG, TAG_TELEGRAM).any { tag ->
+				workManager.awaitUniqueWorkInfoByName(tag).any { !it.state.isFinished }
+			}
 		}
 	}
 
 	companion object {
 
+		/** Sends a backup to Telegram right now, as a foreground job with progress and a cancel button. */
+		fun sendToTelegramNow(context: Context) {
+			val request = OneTimeWorkRequestBuilder<PeriodicalBackupWorker>()
+				.setInputData(workDataOf(KEY_TARGET to TARGET_TELEGRAM))
+				.addTag(TAG_TELEGRAM_NOW)
+				.build()
+			WorkManager.getInstance(context)
+				.enqueueUniqueWork(TAG_TELEGRAM_NOW, ExistingWorkPolicy.KEEP, request)
+		}
+
+		private const val TAG_TELEGRAM_NOW = "backup_telegram_now"
 		private const val FOREGROUND_NOTIFICATION_ID = 41
 		private const val RESULT_NOTIFICATION_ID = 42
 		private const val TAG = "periodical_backup"
+		private const val TAG_TELEGRAM = "periodical_backup_telegram"
+		private const val KEY_TARGET = "target"
+		private const val TARGET_LOCAL = "local"
+		private const val TARGET_TELEGRAM = "telegram"
 		private const val TAG_RESULT = "periodical_backup_result"
 	}
 }

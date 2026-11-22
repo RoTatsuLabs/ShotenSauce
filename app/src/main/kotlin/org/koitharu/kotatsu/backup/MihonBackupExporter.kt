@@ -27,6 +27,9 @@ import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import org.koitharu.kotatsu.core.util.progress.Progress
 import javax.inject.Inject
 
 /**
@@ -49,8 +52,8 @@ class MihonBackupExporter @Inject constructor(
 		val skippedCount: Int,
 	)
 
-	suspend fun export(uri: Uri): Report = withContext(Dispatchers.IO) {
-		val (backup, skipped) = buildBackup()
+	suspend fun export(uri: Uri, onProgress: (Progress) -> Unit = {}): Report = withContext(Dispatchers.IO) {
+		val (backup, skipped) = buildBackup(onProgress)
 		val payload = ProtoBuf.encodeToByteArray(MihonBackup.serializer(), backup)
 		val output = context.contentResolver.openOutputStream(uri) ?: throw IOException("Cannot open $uri")
 		output.use { stream ->
@@ -62,7 +65,7 @@ class MihonBackupExporter @Inject constructor(
 		)
 	}
 
-	private suspend fun buildBackup(): Pair<MihonBackup, Int> {
+	private suspend fun buildBackup(onProgress: (Progress) -> Unit): Pair<MihonBackup, Int> {
 		var skipped = 0
 		val categories = db.getFavouriteCategoriesDao().findAll()
 		// Mihon references categories by their `order`, not by id — see the restore side's
@@ -91,7 +94,10 @@ class MihonBackupExporter @Inject constructor(
 		}
 
 		val usedSources = HashMap<Long, String>()
+		var done = 0
 		val manga = records.values.mapNotNull { record ->
+			currentCoroutineContext().ensureActive()
+			onProgress(Progress(done++, records.size))
 			val source = mihonExtensionManager.getMihonMangaSourceByName(record.manga.source)
 			if (source == null) {
 				skipped++

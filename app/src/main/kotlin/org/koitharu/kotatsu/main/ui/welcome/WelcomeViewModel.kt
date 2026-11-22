@@ -33,7 +33,7 @@ class WelcomeViewModel @Inject constructor(
 	val selectedColorScheme = MutableStateFlow(settings.colorScheme)
 	val isAmoledEnabled = MutableStateFlow(settings.isAmoledTheme)
 	val storageSummary = MutableStateFlow<String?>(null)
-	val onBackupRestored = MutableEventFlow<RestoreBackupResult>()
+	val onRestoreCompleted = backupManager.onRestoreCompleted
 
 	init {
 		launchJob(Dispatchers.Default) {
@@ -71,20 +71,6 @@ class WelcomeViewModel @Inject constructor(
 				storageManager.getDirectoryDisplayName(it, isFullPath = true)
 			}
 			storageSummary.value = summary
-		}
-	}
-
-	fun restoreBackup(uri: Uri) {
-		launchLoadingJob(Dispatchers.Default) {
-			val result = runCatching {
-				backupManager.restoreBackup(uri, MihonBackupManager.Options())
-			}
-			onBackupRestored.call(
-				RestoreBackupResult(
-					report = result.getOrNull(),
-					error = result.exceptionOrNull(),
-				),
-			)
 		}
 	}
 

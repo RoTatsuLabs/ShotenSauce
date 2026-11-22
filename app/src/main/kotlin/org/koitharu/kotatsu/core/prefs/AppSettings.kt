@@ -1374,16 +1374,34 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 	val periodicalBackupFrequencyMillis: Long
 		get() {
 			if (!isPeriodicalBackupEnabled) return 0L
-			return when (prefs.getString(KEY_BACKUP_PERIODICAL_FREQ, "3")?.toIntOrNull() ?: 3) {
-				0 -> 6 * 60 * 60 * 1000L
-				1 -> 24 * 60 * 60 * 1000L
-				2 -> 2 * 24 * 60 * 60 * 1000L
-				3 -> 7 * 24 * 60 * 60 * 1000L
-				4 -> 14 * 24 * 60 * 60 * 1000L
-				5 -> 30 * 24 * 60 * 60 * 1000L
-				else -> 7 * 24 * 60 * 60 * 1000L
-			}
+			return backupFrequencyMillis(prefs.getString(KEY_BACKUP_PERIODICAL_FREQ, "3"))
 		}
+
+	/**
+	 * How often the backup goes to Telegram, which is set apart from the device backup. Until it is
+	 * picked, it follows the device backup frequency, as it did before the two were separated.
+	 */
+	val telegramBackupFrequencyMillis: Long
+		get() {
+			if (!isBackupTelegramConfigured) return 0L
+			val value = prefs.getString(KEY_BACKUP_TELEGRAM_FREQ, null)
+				?: prefs.getString(KEY_BACKUP_PERIODICAL_FREQ, "3")
+			return backupFrequencyMillis(value)
+		}
+
+	/** Whether any backup is due to run on its own: to the device, or to Telegram. */
+	val isBackupWorkNeeded: Boolean
+		get() = (isPeriodicalBackupEnabled && periodicalBackupDirectory != null) || isBackupTelegramConfigured
+
+	private fun backupFrequencyMillis(value: String?): Long = when (value?.toIntOrNull() ?: 3) {
+		0 -> 6 * 60 * 60 * 1000L
+		1 -> 24 * 60 * 60 * 1000L
+		2 -> 2 * 24 * 60 * 60 * 1000L
+		3 -> 7 * 24 * 60 * 60 * 1000L
+		4 -> 14 * 24 * 60 * 60 * 1000L
+		5 -> 30 * 24 * 60 * 60 * 1000L
+		else -> 7 * 24 * 60 * 60 * 1000L
+	}
 
 	/** What the periodic backup saved to the device includes. Everything unless narrowed down. */
 	val backupSections: Set<BackupSection>
@@ -1876,6 +1894,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 			KEY_BACKUP_PERIODICAL_TRIM,
 			KEY_BACKUP_PERIODICAL_COUNT,
 			KEY_BACKUP_TELEGRAM_ENABLED,
+			KEY_BACKUP_TELEGRAM_FREQ,
 			KEY_BACKUP_TELEGRAM_SECTIONS,
 			KEY_SHIZUKU_INSTALLER,
 			KEY_PRIVATE_INSTALLER,
@@ -1921,6 +1940,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val AUTO_PAUSE_DEFAULT_DAYS = 60
 		const val KEY_BACKUP_TELEGRAM_SECTIONS = "backup_telegram_sections"
 		const val KEY_BACKUP_TELEGRAM_ENABLED = "backup_telegram"
+		const val KEY_BACKUP_TELEGRAM_FREQ = "backup_telegram_freq"
 		const val KEY_BACKUP_TELEGRAM_CHAT_ID = "backup_telegram_chat_id"
 
 		// old keys are for migration only

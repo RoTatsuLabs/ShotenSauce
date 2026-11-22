@@ -32,11 +32,28 @@ import org.koitharu.kotatsu.backup.MihonBackupExporter
 import org.koitharu.kotatsu.backup.MihonBackupManager
 import org.koitharu.kotatsu.backup.MihonBackupManager.Options
 import org.koitharu.kotatsu.backup.MihonBackupManager.RestoreReport
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
 import org.koitharu.kotatsu.backup.local.domain.BackupSection
+import org.koitharu.kotatsu.backup.local.ui.NotificationPermissionRequester
+import org.koitharu.kotatsu.backup.local.ui.backup.MihonExportService
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.Alignment
 import org.koitharu.kotatsu.backup.local.domain.BackupUtils
 import org.koitharu.kotatsu.backup.local.ui.backup.BackupService
 import org.koitharu.kotatsu.backup.local.ui.periodical.PeriodicalBackupSettingsFragment
+import org.koitharu.kotatsu.backup.local.ui.restore.MihonRestoreService
 import org.koitharu.kotatsu.backup.local.ui.restore.RestoreDialogFragment
+import org.koitharu.kotatsu.core.util.progress.Progress
+import org.koitharu.kotatsu.settings.compose.SettingsItem
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LinearProgressIndicator
+import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.withContext
 import org.koitharu.kotatsu.core.ui.dialog.showConfirmDialog
 import org.koitharu.kotatsu.core.util.ext.checkNotificationPermission
 import org.koitharu.kotatsu.core.util.ext.getDisplayMessage
@@ -71,16 +88,18 @@ class BackupSettingsFragment : BaseComposeSettingsFragment(R.string.backup_resto
 		ActivityResultContracts.OpenDocument(),
 	) { uri ->
 		if (uri != null) {
-			runMihonRestoreJob(uri, options = Options())
+			startMihonRestore(uri)
 		}
 	}
+
+	private val notificationPermission = NotificationPermissionRequester(this)
 
 	private var pendingSections: Set<BackupSection>? = null
 
 	private val createLocalBackupLauncher = registerForActivityResult(
 		ActivityResultContracts.CreateDocument(BackupUtils.MIME_TYPE),
 	) { uri ->
-		if (uri != null && BackupService.start(requireContext(), uri, pendingSections)) {
+		if (uri != null && !isBusy() && BackupService.start(requireContext(), uri, pendingSections)) {
 			Toast.makeText(requireContext(), R.string.creating_backup, Toast.LENGTH_SHORT).show()
 		}
 	}
@@ -89,14 +108,14 @@ class BackupSettingsFragment : BaseComposeSettingsFragment(R.string.backup_resto
 		ActivityResultContracts.CreateDocument(MihonBackupExporter.MIME_TYPE),
 	) { uri ->
 		if (uri != null) {
-			runMihonExportJob(uri)
+			startMihonExport(uri)
 		}
 	}
 
 	private val restoreLocalBackupLauncher = registerForActivityResult(
 		ActivityResultContracts.OpenDocument(),
 	) { uri ->
-		if (uri != null) {
+		if (uri != null && !isBusy()) {
 			RestoreDialogFragment.show(parentFragmentManager, uri)
 		}
 	}
@@ -125,7 +144,10 @@ class BackupSettingsFragment : BaseComposeSettingsFragment(R.string.backup_resto
 
 					MigrationState.Idle -> stringResource(R.string.migrate_from_kotatsu_summary)
 				}
+				val activeJob by BackupJobs.state.collectAsState()
 				BackupScreen(
+					activeJob = activeJob,
+					onCancelJob = BackupJobs::cancel,
 					onCreateBackup = { sections ->
 						pendingSections = sections
 						createLocalBackupLauncher.launch(
@@ -159,8 +181,13 @@ class BackupSettingsFragment : BaseComposeSettingsFragment(R.string.backup_resto
 
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
+		notificationPermission.requestOnce(requireContext())
 		migrationManager.onStarted.observeEvent(viewLifecycleOwner) {
 			Toast.makeText(requireContext(), R.string.kotatsu_migration_started, Toast.LENGTH_SHORT).show()
+		}
+		// The restore itself runs in a service; this only offers the missing extensions if the screen is still open
+		backupManager.onRestoreCompleted.observeEvent(viewLifecycleOwner) { report ->
+			requireContext().showExtensionInstallPromptDialog(report.missingSources)
 		}
 		migrationManager.onCompleted.observeEvent(viewLifecycleOwner) { summary ->
 			requireContext().showKotatsuMigrationCompleteDialog(summary)
@@ -185,84 +212,33 @@ class BackupSettingsFragment : BaseComposeSettingsFragment(R.string.backup_resto
 		}
 	}
 
-	private fun runMihonExportJob(uri: Uri) {
-		lifecycleScope.launch {
-			val message = runCatching {
-				mihonExporter.export(uri)
-			}.fold(
-				onSuccess = { report ->
-					if (report.skippedCount > 0) {
-						getString(R.string.export_to_mihon_done_partial, report.exportedCount, report.skippedCount)
-					} else {
-						getString(R.string.export_to_mihon_done, report.exportedCount)
-					}
-				},
-				onFailure = { it.getDisplayMessage(resources) },
-			)
-			Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
+	private fun isBusy(): Boolean {
+		if (!BackupJobs.isBusy) return false
+		Toast.makeText(requireContext(), R.string.backup_job_busy, Toast.LENGTH_SHORT).show()
+		return true
+	}
+
+	private fun startMihonExport(uri: Uri) {
+		if (isBusy()) return
+		if (MihonExportService.start(requireContext(), uri)) {
+			Toast.makeText(requireContext(), R.string.export_to_mihon, Toast.LENGTH_SHORT).show()
 		}
 	}
 
-	private fun runMihonRestoreJob(uri: Uri, options: Options) {
-		lifecycleScope.launch {
-			var restoreReport: RestoreReport? = null
-			val result = runCatching {
-				restoreReport = backupManager.restoreBackup(uri, options)
-			}
-			val message = result.fold(
-				onSuccess = { getString(R.string.data_restored_success) },
-				onFailure = { it.getDisplayMessage(resources) },
-			)
-			Toast.makeText(requireContext(), message, Toast.LENGTH_LONG).show()
-			if (result.isSuccess) {
-				restoreReport?.let {
-					requireContext().showExtensionInstallPromptDialog(it.missingSources)
-					showRestoreNotification(it)
-				}
-			}
+	private fun startMihonRestore(uri: Uri) {
+		val context = requireContext()
+		if (isBusy()) return
+		if (MihonRestoreService.start(context, uri)) {
+			Toast.makeText(context, R.string.restoring_backup, Toast.LENGTH_SHORT).show()
 		}
 	}
 
-	private fun showRestoreNotification(report: RestoreReport) {
-		val ctx = requireContext().applicationContext
-		val manager = NotificationManagerCompat.from(ctx)
-		val channel = NotificationChannelCompat.Builder(
-			RESTORE_CHANNEL_ID,
-			NotificationManagerCompat.IMPORTANCE_DEFAULT,
-		)
-			.setName(getString(R.string.backup_restore))
-			.setShowBadge(false)
-			.build()
-		manager.createNotificationChannel(channel)
-		if (!ctx.checkNotificationPermission(RESTORE_CHANNEL_ID)) return
-
-		val details = buildString {
-			append(getString(R.string.restore_report_restored_simple, report.restoredMangaCount))
-			if (report.missingSources.isNotEmpty()) {
-				append('\n')
-				append(report.missingSources.joinToString())
-			}
-		}
-		val notification = NotificationCompat.Builder(ctx, RESTORE_CHANNEL_ID)
-			.setSmallIcon(R.drawable.general_notification)
-			.setContentTitle(getString(R.string.data_restored_success))
-			.setContentText(details)
-			.setStyle(NotificationCompat.BigTextStyle().bigText(details))
-			.setAutoCancel(true)
-			.setPriority(NotificationCompat.PRIORITY_DEFAULT)
-			.setSilent(true)
-			.build()
-		manager.notify(RESTORE_NOTIFICATION_ID, notification)
-	}
-
-	companion object {
-		private const val RESTORE_CHANNEL_ID = "backup_restore"
-		private const val RESTORE_NOTIFICATION_ID = 7002
-	}
 }
 
 @Composable
 private fun BackupScreen(
+	activeJob: BackupJobs.State?,
+	onCancelJob: () -> Unit,
 	onCreateBackup: (Set<BackupSection>) -> Unit,
 	onRestoreLocal: () -> Unit,
 	onOpenPeriodic: () -> Unit,
@@ -291,33 +267,36 @@ private fun BackupScreen(
 		item {
 			SettingsGroup(title = stringResource(R.string.backup_restore)) {
 				item { pos ->
-					ActionSettingsItem(
+					SettingsItem(
 						title = stringResource(R.string.create_backup),
 						subtitle = stringResource(R.string.create_backup_summary),
 						icon = R.drawable.ic_save,
 						
 						shape = pos.shape,
 						onClick = { showCreateDialog = true },
+						below = jobBar(activeJob, onCancelJob, BackupJobs.Kind.BACKUP),
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					SettingsItem(
 						title = stringResource(R.string.restore_backup),
 						subtitle = stringResource(R.string.restore_summary),
 						icon = R.drawable.ic_revert,
 						
 						shape = pos.shape,
 						onClick = onRestoreLocal,
+						below = jobBar(activeJob, onCancelJob, BackupJobs.Kind.RESTORE),
 					)
 				}
 				item { pos ->
-					NavigationSettingsItem(
+					SettingsItem(
 						title = stringResource(R.string.periodic_backups),
 						subtitle = stringResource(R.string.periodic_backups_summary),
 						icon = R.drawable.ic_backup_restore,
 						
 						shape = pos.shape,
 						onClick = onOpenPeriodic,
+						below = jobBar(activeJob, onCancelJob, BackupJobs.Kind.SCHEDULED, BackupJobs.Kind.TELEGRAM),
 					)
 				}
 			}
@@ -326,13 +305,13 @@ private fun BackupScreen(
 		item {
 			SettingsGroup(title = stringResource(R.string.other_apps)) {
 				item { pos ->
-					ActionSettingsItem(
+					SettingsItem(
 						title = stringResource(R.string.restore_from_tachiyomi),
 						subtitle = stringResource(R.string.restore_tachiyomi_summary),
 						icon = R.drawable.ic_revert,
-
 						shape = pos.shape,
 						onClick = onRestoreFromTachiyomi,
+						below = jobBar(activeJob, onCancelJob, BackupJobs.Kind.MIHON_RESTORE),
 					)
 				}
 				item { pos ->
@@ -346,17 +325,45 @@ private fun BackupScreen(
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					SettingsItem(
 						title = stringResource(R.string.export_to_mihon),
 						subtitle = stringResource(R.string.export_to_mihon_summary),
 						icon = R.drawable.ic_upload_file,
 
 						shape = pos.shape,
 						onClick = onExportToMihon,
+						below = jobBar(activeJob, onCancelJob, BackupJobs.Kind.MIHON_EXPORT),
 					)
 				}
 			}
 		}
 		item { Spacer(Modifier.height(24.dp).fillMaxWidth()) }
 	}
+}
+
+@Composable
+private fun JobBar(progress: Progress, onCancel: () -> Unit) {
+	Row(verticalAlignment = Alignment.CenterVertically) {
+		if (progress.isIndeterminate || progress.total <= 0) {
+			LinearProgressIndicator(modifier = Modifier.weight(1f))
+		} else {
+			LinearProgressIndicator(
+				progress = { progress.progress.toFloat() / progress.total },
+				modifier = Modifier.weight(1f),
+			)
+		}
+		TextButton(onClick = onCancel) {
+			Text(stringResource(android.R.string.cancel))
+		}
+	}
+}
+
+private fun jobBar(
+	job: BackupJobs.State?,
+	onCancel: () -> Unit,
+	vararg kinds: BackupJobs.Kind,
+): (@Composable () -> Unit)? = if (job != null && job.kind in kinds) {
+	{ JobBar(job.progress, onCancel) }
+} else {
+	null
 }

@@ -3,19 +3,26 @@ package org.koitharu.kotatsu.backup.local.ui
 import android.content.Context
 import android.net.Uri
 import android.provider.OpenableColumns
+import android.widget.Toast
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.PendingIntentCompat
 import androidx.core.app.ShareCompat
 import org.koitharu.kotatsu.R
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.withContext
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
 import org.koitharu.kotatsu.backup.local.domain.BackupUtils
 import org.koitharu.kotatsu.core.nav.AppRouter
 import org.koitharu.kotatsu.core.ui.CoroutineIntentService
 import org.koitharu.kotatsu.core.util.CompositeResult
 import org.koitharu.kotatsu.core.util.ext.checkNotificationPermission
 import org.koitharu.kotatsu.core.util.ext.getDisplayMessage
+import org.koitharu.kotatsu.core.util.ext.powerManager
 import org.koitharu.kotatsu.core.util.ext.printStackTraceDebug
+import org.koitharu.kotatsu.core.util.ext.withPartialWakeLock
 import androidx.appcompat.R as appcompatR
 
 abstract class BaseBackupRestoreService : CoroutineIntentService() {
@@ -30,6 +37,25 @@ abstract class BaseBackupRestoreService : CoroutineIntentService() {
 		super.onCreate()
 		notificationManager = NotificationManagerCompat.from(applicationContext)
 		createNotificationChannel(this)
+	}
+
+	/**
+	 * Takes the process-wide backup/restore slot and a wake lock for [block]. If another job already
+	 * runs, [block] is skipped and the user is told why.
+	 */
+	protected suspend fun IntentJobContext.runExclusive(kind: BackupJobs.Kind, block: suspend () -> Unit) {
+		val job = this.coroutineContext[Job]
+		if (!BackupJobs.tryAcquire(kind) { job?.cancel() }) {
+			withContext(Dispatchers.Main) {
+				Toast.makeText(applicationContext, R.string.backup_job_busy, Toast.LENGTH_SHORT).show()
+			}
+			return
+		}
+		try {
+			applicationContext.powerManager.withPartialWakeLock(notificationTag) { block() }
+		} finally {
+			BackupJobs.release()
+		}
 	}
 
 	override fun IntentJobContext.onError(error: Throwable) {

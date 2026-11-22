@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.backup.local.data.LocalBackupRepository
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
 import org.koitharu.kotatsu.backup.local.domain.BackupSection
 import org.koitharu.kotatsu.backup.local.ui.BaseBackupRestoreService
 import org.koitharu.kotatsu.core.nav.AppRouter
@@ -55,16 +56,15 @@ class BackupService : BaseBackupRestoreService() {
 		val sections = intent.getStringArrayExtra(KEY_SECTIONS)
 			?.mapNotNullTo(HashSet()) { BackupSection.byEntryName(it) }
 			?: BackupSection.entries.toSet()
-		applicationContext.powerManager.withPartialWakeLock(TAG) {
+		runExclusive(BackupJobs.Kind.BACKUP) {
 			val progress = MutableStateFlow(Progress.INDETERMINATE)
-			val progressUpdateJob = if (applicationContext.checkNotificationPermission(CHANNEL_ID)) {
-				launch {
-					progress.collect {
+			val progressUpdateJob = launch {
+				progress.collect {
+					BackupJobs.update(it)
+					if (applicationContext.checkNotificationPermission(CHANNEL_ID)) {
 						notificationManager.notify(FOREGROUND_NOTIFICATION_ID, buildNotification(it))
 					}
 				}
-			} else {
-				null
 			}
 			try {
 				ZipOutputStream(contentResolver.openOutputStream(destination)).use { output ->
@@ -78,7 +78,7 @@ class BackupService : BaseBackupRestoreService() {
 				}
 				throw e
 			}
-			progressUpdateJob?.cancelAndJoin()
+			progressUpdateJob.cancelAndJoin()
 			contentResolver.notifyChange(destination, null)
 			showResultNotification(destination, CompositeResult.success())
 			withContext(Dispatchers.Main) {

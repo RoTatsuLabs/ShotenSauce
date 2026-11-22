@@ -717,6 +717,7 @@
     <string name="auto_track_idle">Melacak favorit yang belum ada di tracker</string>
     <string name="auto_track_waiting">Menunggu koneksi atau batas laju tracker</string>
     <string name="auto_track_progress">Melacak %1$d dari %2$d</string>
+    <string name="auto_track_done_text">%1$d dilacak, %2$d perlu ditinjau, %3$d gagal</string>
     <string name="auto_track_summary">Terakhir: %1$d terlacak, %2$d perlu ditinjau, %3$d gagal</string>
     <string name="auto_track_no_trackers">Masuk ke tracker terlebih dahulu</string>
     <string name="auto_track_nothing">Semua favoritmu sudah terlacak</string>
@@ -726,6 +727,7 @@
     <string name="auto_track_confirm">%1$d favorit belum ada di %2$s. Judul dilacak satu per satu di latar belakang. Hanya kecocokan yang jelas yang ditautkan, progres bacamu ikut ditambahkan, dan tracker membatasi kecepatannya, jadi mungkin butuh waktu.</string>
     <string name="auto_track_start">Mulai</string>
     <string name="auto_track_review">Perlu ditinjau</string>
+    <string name="auto_track_review_hint">Belum ada yang cocok untuk judul ini di tracker kamu. Ketuk judul untuk memilih entri, atau tautkan semuanya ke hasil terdekat.</string>
     <string name="auto_track_closest_confirm">%1$d judul tidak punya kecocokan yang jelas. Tautkan masing-masing ke entri terdekat di trackermu? Tautan bisa salah, jadi periksa di tracker setelahnya.</string>
     <string name="auto_track_link_all">Tautkan semua ke entri terdekat</string>
     <string name="auto_pause_stale">Jeda judul yang lama tidak dibaca</string>

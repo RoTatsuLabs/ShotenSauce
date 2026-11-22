@@ -787,6 +787,7 @@
     <string name="auto_track_idle">Tracks favourites that are not on a tracker yet</string>
     <string name="auto_track_waiting">Waiting for a connection or for the tracker\'s rate limit</string>
     <string name="auto_track_progress">Tracking %1$d of %2$d</string>
+    <string name="auto_track_done_text">%1$d tracked, %2$d need review, %3$d failed</string>
     <string name="auto_track_summary">Last run: %1$d tracked, %2$d need review, %3$d failed</string>
     <string name="auto_track_no_trackers">Sign in to a tracker first</string>
     <string name="auto_track_nothing">All your favourites are already tracked</string>
@@ -796,6 +797,7 @@
     <string name="auto_track_confirm">%1$d favourites are not on %2$s yet. They are tracked one by one in the background. Only clear matches are linked, your reading progress is added, and trackers limit how fast this can go, so it may take a while.</string>
     <string name="auto_track_start">Start</string>
     <string name="auto_track_review">Needs review</string>
+    <string name="auto_track_review_hint">No clear match was found for these on your trackers. Tap a title to choose its entry, or link them all to the closest result.</string>
     <string name="auto_track_closest_confirm">%1$d titles have no clear match. Link each one to its nearest entry on your trackers? Wrong links are possible, so check them on the tracker afterwards.</string>
     <string name="auto_pause_stale">Pause stale titles</string>
     <string name="auto_pause_stale_summary">Marks titles you have not read for a while as On hold on your trackers</string>

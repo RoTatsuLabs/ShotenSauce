@@ -66,6 +66,8 @@ class PeriodicalBackupSettingsFragment :
 
 	private val outputSelectCall = OpenDocumentTreeHelper(this, this)
 
+	private val notificationPermission = org.koitharu.kotatsu.backup.local.ui.NotificationPermissionRequester(this)
+
 	override fun onCreateView(
 		inflater: LayoutInflater,
 		container: ViewGroup?,
@@ -89,9 +91,7 @@ class PeriodicalBackupSettingsFragment :
 
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
-		viewModel.onTelegramSent.observeEvent(viewLifecycleOwner) {
-			Snackbar.make(view, R.string.backup_telegram_sent, Snackbar.LENGTH_SHORT).show()
-		}
+		notificationPermission.requestOnce(requireContext())
 		viewModel.onTelegramLink.observeEvent(viewLifecycleOwner) { url ->
 			try {
 				startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
@@ -148,6 +148,8 @@ private fun PeriodicalBackupScreen(
 
 	var enabled by rememberBooleanPref(AppSettings.KEY_BACKUP_PERIODICAL_ENABLED, false)
 	var frequency by rememberStringPref(AppSettings.KEY_BACKUP_PERIODICAL_FREQ, "3")
+	// Until picked, the Telegram backup follows the device frequency, as the setting reads it
+	var telegramFrequency by rememberStringPref(AppSettings.KEY_BACKUP_TELEGRAM_FREQ, frequency)
 	var trim by rememberBooleanPref(AppSettings.KEY_BACKUP_PERIODICAL_TRIM, true)
 	var maxCount by rememberIntPref(AppSettings.KEY_BACKUP_PERIODICAL_COUNT, 10)
 	val backupSections = remember { BackupSection.selectable }
@@ -276,6 +278,18 @@ private fun PeriodicalBackupScreen(
 						hint = stringResource(R.string.backup_telegram_chat_id_hint),
 						onValueChange = { telegramChatId = it.trim() },
 						icon = R.drawable.ic_account_circle,
+						shape = pos.shape,
+						enabled = telegramEnabled,
+					)
+				}
+				item { pos ->
+					ListSettingsItem(
+						title = stringResource(R.string.backup_frequency),
+						entries = frequencyEntries,
+						entryValues = frequencyValues,
+						selectedValue = telegramFrequency,
+						onValueChange = { telegramFrequency = it },
+						icon = R.drawable.ic_timelapse,
 						shape = pos.shape,
 						enabled = telegramEnabled,
 					)

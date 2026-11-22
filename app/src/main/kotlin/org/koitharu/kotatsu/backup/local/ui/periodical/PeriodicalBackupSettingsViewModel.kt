@@ -11,7 +11,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import org.koitharu.kotatsu.BuildConfig
+import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.backup.local.domain.BackupJobs
 import org.koitharu.kotatsu.backup.local.data.LocalBackupRepository
 import org.koitharu.kotatsu.backup.local.domain.BackupUtils
 import org.koitharu.kotatsu.backup.local.domain.ExternalBackupStorage
@@ -39,9 +45,9 @@ class PeriodicalBackupSettingsViewModel @Inject constructor(
 	val lastBackupDate = MutableStateFlow<Date?>(null)
 	val backupsDirectory = MutableStateFlow<String?>("")
 
-	private val isSendingState = MutableStateFlow(false)
-	val isTelegramSending: StateFlow<Boolean> = isSendingState.asStateFlow()
-	val onTelegramSent = MutableEventFlow<Unit>()
+	val isTelegramSending: StateFlow<Boolean> = BackupJobs.state
+		.map { it?.kind == BackupJobs.Kind.TELEGRAM }
+		.stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
 	private val isLinkingState = MutableStateFlow(false)
 	val isTelegramLinking: StateFlow<Boolean> = isLinkingState.asStateFlow()
@@ -88,25 +94,11 @@ class PeriodicalBackupSettingsViewModel @Inject constructor(
 	}
 
 	fun sendToTelegram() {
-		if (isSendingState.value) return
-		launchJob(Dispatchers.Default) {
-			isSendingState.value = true
-			val file = BackupUtils.createTempFile(appContext)
-			try {
-				ZipOutputStream(file.outputStream()).use { output ->
-					repository.createBackup(output, MutableStateFlow(Progress.INDETERMINATE), settings.backupTelegramSections)
-				}
-				telegramUploader.send(file)
-				onTelegramSent.call(Unit)
-			} catch (e: CancellationException) {
-				throw e
-			} catch (e: Throwable) {
-				errorEvent.call(e)
-			} finally {
-				file.delete()
-				isSendingState.value = false
-			}
+		if (BackupJobs.isBusy) {
+			errorEvent.call(IllegalStateException(appContext.getString(R.string.backup_job_busy)))
+			return
 		}
+		PeriodicalBackupWorker.sendToTelegramNow(appContext)
 	}
 
 	fun updateSummaryData() {

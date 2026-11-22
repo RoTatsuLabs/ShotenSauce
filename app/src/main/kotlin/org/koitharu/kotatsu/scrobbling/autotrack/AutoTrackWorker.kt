@@ -6,6 +6,7 @@ import android.os.Build
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.app.PendingIntentCompat
 import androidx.hilt.work.HiltWorker
 import androidx.work.BackoffPolicy
 import androidx.work.Constraints
@@ -26,6 +27,8 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.koitharu.kotatsu.R
+import org.koitharu.kotatsu.core.nav.AppRouter
+import org.koitharu.kotatsu.core.util.ext.checkNotificationPermission
 import org.koitharu.kotatsu.core.util.ext.printStackTraceDebug
 import org.koitharu.kotatsu.core.util.ext.trySetForeground
 import org.koitharu.kotatsu.scrobbling.common.domain.ScrobblerAuthRequiredException
@@ -91,7 +94,9 @@ class AutoTrackWorker @AssistedInject constructor(
 			updateForeground(index + 1, pending.size)
 		}
 		saveSummary(tracked, review, failed, pending.size)
-		return if (hitLimit) Result.retry() else Result.success()
+		if (hitLimit) return Result.retry()
+		showResultNotification()
+		return Result.success()
 	}
 
 	override suspend fun getForegroundInfo(): ForegroundInfo = createForegroundInfo(0, 0)
@@ -105,6 +110,33 @@ class AutoTrackWorker @AssistedInject constructor(
 			failed = failed,
 			total = total + (previous?.takeIf { isContinuation }?.total ?: 0),
 		)
+	}
+
+	/** A finished pass leaves its outcome in the shade, since the progress notification disappears with it. */
+	private fun showResultNotification() {
+		val summary = store.lastSummary ?: return
+		// A single favourite tracked on its own is not worth a notification
+		if (summary.total < 2) return
+		if (!applicationContext.checkNotificationPermission(CHANNEL_ID)) return
+		val text = applicationContext.getString(
+			R.string.auto_track_done_text,
+			summary.tracked,
+			summary.needsReview,
+			summary.failed,
+		)
+		val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
+			.setContentTitle(applicationContext.getString(R.string.auto_track_favourites))
+			.setContentText(text)
+			.setStyle(NotificationCompat.BigTextStyle().bigText(text))
+			.setSmallIcon(R.drawable.general_notification)
+			.setPriority(NotificationCompat.PRIORITY_LOW)
+			.setAutoCancel(true)
+			.setSilent(true)
+			.setContentIntent(
+				PendingIntentCompat.getActivity(applicationContext, 0, AppRouter.homeIntent(applicationContext), 0, false),
+			)
+			.build()
+		NotificationManagerCompat.from(applicationContext).notify(RESULT_NOTIFICATION_ID, notification)
 	}
 
 	private val isContinuation: Boolean
@@ -135,7 +167,7 @@ class AutoTrackWorker @AssistedInject constructor(
 				},
 			)
 			.setSmallIcon(R.drawable.general_notification)
-			.setPriority(NotificationCompat.PRIORITY_MIN)
+			.setPriority(NotificationCompat.PRIORITY_LOW)
 			.setCategory(NotificationCompat.CATEGORY_SERVICE)
 			.setOngoing(true)
 			.setOnlyAlertOnce(true)
@@ -193,6 +225,7 @@ class AutoTrackWorker @AssistedInject constructor(
 		const val TAG = "auto_track"
 		const val CHANNEL_ID = "auto_track"
 		const val NOTIFICATION_ID = 47
+		const val RESULT_NOTIFICATION_ID = 48
 		const val KEY_DONE = "done"
 		const val KEY_TOTAL = "total"
 		const val KEY_REVIEW = "review"

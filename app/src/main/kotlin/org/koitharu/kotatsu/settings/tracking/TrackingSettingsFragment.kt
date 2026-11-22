@@ -10,10 +10,13 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +45,7 @@ import org.koitharu.kotatsu.scrobbling.autotrack.AutoTracker
 import org.koitharu.kotatsu.settings.SettingsActivity
 import org.koitharu.kotatsu.settings.compose.ActionSettingsItem
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
+import org.koitharu.kotatsu.settings.compose.ChoiceDialog
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
 import org.koitharu.kotatsu.settings.compose.SettingsGroup
 import org.koitharu.kotatsu.settings.compose.SettingsItem
@@ -69,6 +73,7 @@ class TrackingSettingsFragment : BaseComposeSettingsFragment(R.string.tracking_o
 
 	private val autoTrackStatus = MutableStateFlow<String?>(null)
 	private val reviewCount = MutableStateFlow(0)
+	private val autoTrackProgress = MutableStateFlow<AutoTrackWorker.Progress?>(null)
 
 	override fun onCreateView(
 		inflater: LayoutInflater,
@@ -80,10 +85,13 @@ class TrackingSettingsFragment : BaseComposeSettingsFragment(R.string.tracking_o
 			DropSauceTheme {
 				val status by autoTrackStatus.collectAsState()
 				val reviewTotal by reviewCount.collectAsState()
+				val progress by autoTrackProgress.collectAsState()
 				TrackingScreen(
 					autoTrackStatus = status,
+					autoTrackProgress = progress,
 					reviewCount = reviewTotal,
 					onTrackUntracked = ::confirmTrackUntracked,
+					onCancelTrack = { viewLifecycleOwner.lifecycleScope.launch { autoTrackScheduler.stop() } },
 					onOpenReview = {
 						(activity as? SettingsActivity)?.openFragment(
 							TrackReviewFragment::class.java,
@@ -104,6 +112,7 @@ class TrackingSettingsFragment : BaseComposeSettingsFragment(R.string.tracking_o
 		}
 		autoTrackScheduler.observe().observe(viewLifecycleOwner) { progress ->
 			reviewCount.value = autoTracker.pendingReview().size
+			autoTrackProgress.value = progress
 			autoTrackStatus.value = when {
 				progress == null -> autoTrackStore.lastSummary?.let {
 					getString(R.string.auto_track_summary, it.tracked, it.needsReview, it.failed)
@@ -177,8 +186,10 @@ class TrackingSettingsFragment : BaseComposeSettingsFragment(R.string.tracking_o
 @Composable
 private fun TrackingScreen(
 	autoTrackStatus: String?,
+	autoTrackProgress: AutoTrackWorker.Progress?,
 	reviewCount: Int,
 	onTrackUntracked: () -> Unit,
+	onCancelTrack: () -> Unit,
 	onOpenReview: () -> Unit,
 ) {
 	var autoTrack by rememberBooleanPref(AppSettings.KEY_AUTO_TRACK_FAVOURITES, false)
@@ -187,6 +198,21 @@ private fun TrackingScreen(
 	var autoPause by rememberBooleanPref(AppSettings.KEY_AUTO_PAUSE_STALE, false)
 	var autoPauseDays by rememberIntPref(AppSettings.KEY_AUTO_PAUSE_DAYS, AppSettings.AUTO_PAUSE_DEFAULT_DAYS)
 	val dialogContext = LocalContext.current
+	var showPauseDialog by remember { mutableStateOf(false) }
+	val pauseDayOptions = remember { listOf(30, 60, 90, 180) }
+	if (showPauseDialog) {
+		ChoiceDialog(
+			title = stringResource(R.string.auto_pause_after),
+			entries = pauseDayOptions.map { dialogContext.getString(R.string.auto_pause_days, it) },
+			selectedIndex = pauseDayOptions.indexOf(autoPauseDays),
+			onSelect = { index ->
+				autoPauseDays = pauseDayOptions[index]
+				autoPause = true
+			},
+			onDismiss = { showPauseDialog = false },
+			icon = R.drawable.ic_history,
+		)
+	}
 
 	SettingsScaffold {
 		item {
@@ -238,19 +264,7 @@ private fun TrackingScreen(
 						},
 						icon = R.drawable.ic_eye_off,
 						shape = pos.shape,
-						onClick = {
-							showActionChoiceDialog(
-								context = dialogContext,
-								icon = R.drawable.ic_history,
-								title = dialogContext.getString(R.string.auto_pause_after),
-								actions = listOf(30, 60, 90, 180).map { days ->
-									DialogAction(label = dialogContext.getString(R.string.auto_pause_days, days)) {
-										autoPauseDays = days
-										autoPause = true
-									}
-								},
-							)
-						},
+						onClick = { showPauseDialog = true },
 						trailing = {
 							Row(verticalAlignment = Alignment.CenterVertically) {
 								VerticalDivider(modifier = Modifier.height(32.dp))
@@ -268,12 +282,34 @@ private fun TrackingScreen(
 		item {
 			SettingsGroup(title = stringResource(R.string.tracking_section_actions)) {
 				item { pos ->
-					ActionSettingsItem(
+					SettingsItem(
 						title = stringResource(R.string.auto_track_untracked),
 						subtitle = autoTrackStatus,
 						icon = R.drawable.ic_sync_alt,
 						shape = pos.shape,
-						onClick = onTrackUntracked,
+						// A pass is already running: starting another would only queue behind it
+						onClick = { if (autoTrackProgress == null) onTrackUntracked() },
+						below = if (autoTrackProgress != null) {
+							{
+								androidx.compose.foundation.layout.Row(
+									verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+								) {
+									if (autoTrackProgress.isWaiting || autoTrackProgress.total <= 0) {
+										LinearProgressIndicator(modifier = Modifier.weight(1f))
+									} else {
+										LinearProgressIndicator(
+											progress = { autoTrackProgress.done.toFloat() / autoTrackProgress.total },
+											modifier = Modifier.weight(1f),
+										)
+									}
+									androidx.compose.material3.TextButton(onClick = onCancelTrack) {
+										androidx.compose.material3.Text(stringResource(android.R.string.cancel))
+									}
+								}
+							}
+						} else {
+							null
+						},
 					)
 				}
 				if (reviewCount > 0) {

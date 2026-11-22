@@ -6,6 +6,9 @@
     <plurals name="new_chapters">
         <item quantity="other">%1$d Sub-bab Baru</item>
     </plurals>
+    <plurals name="auto_track_review_titles">
+        <item quantity="other">%1$d judul perlu dicocokkan manual</item>
+    </plurals>
     <plurals name="also_known_as_others">
         <item quantity="other">juga dikenal sebagai %1$d judul lain</item>
     </plurals>

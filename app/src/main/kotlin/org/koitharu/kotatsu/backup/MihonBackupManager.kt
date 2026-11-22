@@ -7,6 +7,8 @@ import androidx.preference.PreferenceManager
 import androidx.room.withTransaction
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.protobuf.ProtoBuf
@@ -36,6 +38,8 @@ import org.koitharu.kotatsu.core.db.entity.TagEntity
 import org.koitharu.kotatsu.core.exceptions.BadBackupFormatException
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.prefs.SourceSettings
+import org.koitharu.kotatsu.core.util.ext.MutableEventFlow
+import org.koitharu.kotatsu.core.util.progress.Progress
 import org.koitharu.kotatsu.favourites.data.FavouriteCategoryEntity
 import org.koitharu.kotatsu.favourites.data.FavouriteEntity
 import org.koitharu.kotatsu.history.data.HistoryEntity
@@ -65,6 +69,19 @@ class MihonBackupManager @Inject constructor(
     private val mihonExtensionLoader: MihonExtensionLoader,
     private val extensionStoreRegistry: ExtensionStoreRegistry,
 ) {
+
+  private val _restoreProgress = MutableStateFlow<Progress?>(null)
+
+  /** Progress of the restore that is running, or null. Shown on the settings screen while the service works. */
+  val restoreProgress: StateFlow<Progress?> = _restoreProgress
+
+  /** Fired when a restore finishes, so a screen that is still open can offer the missing extensions. */
+  val onRestoreCompleted = MutableEventFlow<RestoreReport>()
+
+  /** Set by the restore service; [restoreBackup] reports through it as well as through its callback. */
+  fun setRestoreProgress(value: Progress?) {
+    _restoreProgress.value = value
+  }
 
   data class Options(
     val libraryEntries: Boolean = true,
@@ -174,7 +191,11 @@ class MihonBackupManager @Inject constructor(
         buildDiagnostics(backup, options).toReport()
     }
 
-    suspend fun restoreBackup(uri: Uri, options: Options = Options()): RestoreReport {
+    suspend fun restoreBackup(
+        uri: Uri,
+        options: Options = Options(),
+        onProgress: ((Progress) -> Unit)? = null,
+    ): RestoreReport {
         return withContext(Dispatchers.IO) {
             val backup = decode(uri)
             val diagnostics = buildDiagnostics(backup, options)
@@ -182,7 +203,7 @@ class MihonBackupManager @Inject constructor(
                 if (options.libraryEntries) {
                     val categoryResolver = CategoryResolver(backup.backupCategories)
                     categoryResolver.prepare(backup.backupManga)
-                    restoreManga(backup, options, diagnostics, categoryResolver)
+                    restoreManga(backup, options, diagnostics, categoryResolver, onProgress)
                     removeEmptyReadLaterCategory()
                 }
                 if (options.appSettings) {
@@ -275,10 +296,15 @@ class MihonBackupManager @Inject constructor(
         options: Options,
         diagnostics: RestoreAccumulator,
         categoryResolver: CategoryResolver,
+        onProgress: ((Progress) -> Unit)?,
     ) {
         val now = System.currentTimeMillis()
+        // Three passes over the library report progress: reading each entry, saving it, saving its chapters
+        val totalSteps = (backup.backupManga.size * 3).coerceAtLeast(1)
+        var doneSteps = 0
 
         val pending = backup.backupManga.map { item ->
+            onProgress?.invoke(Progress(doneSteps++, totalSteps))
             val sourceName = resolveStoredSourceName(item.source, backup.backupSources)
             // Use the same identities as the live Mihon adapter. Otherwise the first network
             // refresh replaces every restored chapter ID, losing the reading branch/checkpoint.
@@ -477,10 +503,16 @@ class MihonBackupManager @Inject constructor(
         pending.flatMapTo(linkedSetOf()) { it.tags }
             .takeIf { it.isNotEmpty() }
             ?.let { db.getTagsDao().upsert(it.toList()) }
-        pending.forEach { item -> db.getMangaDao().upsert(item.manga, item.tags) }
+        pending.forEach { item ->
+            db.getMangaDao().upsert(item.manga, item.tags)
+            onProgress?.invoke(Progress(doneSteps++, totalSteps))
+        }
         pending.forEach { item -> item.track?.let { db.getTracksDao().upsert(it) } }
         pending.forEach { item -> item.favourites.forEach { db.getFavouritesDao().upsert(it) } }
-        pending.forEach { item -> db.getChaptersDao().replaceAll(item.manga.id, item.chapters) }
+        pending.forEach { item ->
+            db.getChaptersDao().replaceAll(item.manga.id, item.chapters)
+            onProgress?.invoke(Progress(doneSteps++, totalSteps))
+        }
         pending.forEach { item -> item.history?.let { db.getHistoryDao().upsert(it) } }
         pending.forEach { item -> item.stats?.let { db.getStatsDao().upsert(it) } }
         pending.forEach { item ->

@@ -952,6 +952,19 @@
 			android:foregroundServiceType="dataSync"
 			android:label="@string/creating_backup" />
 		<service
+			android:name="org.koitharu.kotatsu.backup.local.ui.backup.MihonExportService"
+			android:exported="false"
+			android:foregroundServiceType="dataSync"
+			android:label="@string/export_to_mihon" />
+		<receiver
+			android:name="org.koitharu.kotatsu.backup.local.ui.BackupCancelReceiver"
+			android:exported="false" />
+		<service
+			android:name="org.koitharu.kotatsu.backup.local.ui.restore.MihonRestoreService"
+			android:exported="false"
+			android:foregroundServiceType="dataSync"
+			android:label="@string/restoring_backup" />
+		<service
 			android:name="org.koitharu.kotatsu.backup.local.ui.restore.RestoreService"
 			android:exported="false"
 			android:foregroundServiceType="dataSync"

@@ -5,6 +5,19 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material3.Button
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.text.font.FontWeight
+import org.koitharu.kotatsu.core.model.getTitle
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -153,23 +166,89 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 		onLinkAll: () -> Unit,
 		onPick: (Entry) -> Unit,
 	) {
+		var selectedService by rememberSaveable { mutableStateOf<Int?>(null) }
 		SettingsScaffold {
 			if (entries.isEmpty()) return@SettingsScaffold
+			val services = entries.map { it.service }.distinct()
+			// A filter whose titles were all linked meanwhile no longer exists: show everything again
+			val filter = selectedService?.takeIf { id -> services.any { it.id == id } }
+			val titleCount = entries.map { it.manga.id }.distinct().size
 			item {
-				FilledTonalButton(
-					onClick = onLinkAll,
-					modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
-				) {
-					Text(stringResource(R.string.auto_track_link_all))
-				}
+				ReviewHeader(titleCount = titleCount, onLinkAll = onLinkAll)
 			}
-			entries.groupBy { it.service }.forEach { (service, group) ->
+			if (services.size > 1) {
 				item {
-					SettingsGroup(title = "${stringResource(service.titleResId)} · ${group.size}") {
-						group.forEach { entry ->
-							item { pos -> ReviewRow(entry, pos, imageLoader) { onPick(entry) } }
+					Row(
+						modifier = Modifier
+							.fillMaxWidth()
+							.horizontalScroll(rememberScrollState())
+							.padding(vertical = 4.dp),
+						horizontalArrangement = Arrangement.spacedBy(8.dp),
+					) {
+						FilterChip(
+							selected = filter == null,
+							onClick = { selectedService = null },
+							label = { Text(stringResource(R.string.chapters_all) + " · " + entries.size) },
+						)
+						services.forEach { service ->
+							FilterChip(
+								selected = filter == service.id,
+								onClick = { selectedService = service.id },
+								label = {
+									Text(stringResource(service.titleResId) + " · " + entries.count { it.service == service })
+								},
+							)
 						}
 					}
+				}
+			}
+			entries
+				.filter { filter == null || it.service.id == filter }
+				.groupBy { it.service }
+				.forEach { (service, group) ->
+					item {
+						SettingsGroup(title = "${stringResource(service.titleResId)} · ${group.size}") {
+							group.sortedBy { it.manga.title.lowercase() }.forEach { entry ->
+								item { pos -> ReviewRow(entry, pos, imageLoader) { onPick(entry) } }
+							}
+						}
+					}
+				}
+		}
+	}
+
+	/** What the list is and what can be done with it, instead of a bare button on top of it. */
+	@Composable
+	private fun ReviewHeader(titleCount: Int, onLinkAll: () -> Unit) {
+		Surface(
+			shape = RoundedCornerShape(24.dp),
+			color = MaterialTheme.colorScheme.secondaryContainer,
+			contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+			modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+		) {
+			Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+				Row(
+					verticalAlignment = Alignment.CenterVertically,
+					horizontalArrangement = Arrangement.spacedBy(10.dp),
+				) {
+					Icon(
+						painter = painterResource(R.drawable.ic_sync_problem),
+						contentDescription = null,
+						modifier = Modifier.size(22.dp),
+					)
+					Text(
+						text = pluralStringResource(R.plurals.auto_track_review_titles, titleCount, titleCount),
+						style = MaterialTheme.typography.titleMedium,
+						fontWeight = FontWeight.SemiBold,
+					)
+				}
+				Text(
+					text = stringResource(R.string.auto_track_review_hint),
+					style = MaterialTheme.typography.bodyMedium,
+				)
+				Spacer(Modifier.height(4.dp))
+				Button(onClick = onLinkAll, modifier = Modifier.fillMaxWidth()) {
+					Text(stringResource(R.string.auto_track_link_all))
 				}
 			}
 		}
@@ -187,9 +266,9 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 				.clickable(onClick = onClick)
 				.padding(horizontal = 12.dp, vertical = 10.dp),
 			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(12.dp),
+			horizontalArrangement = Arrangement.spacedBy(14.dp),
 		) {
-			Box(Modifier.size(width = 48.dp, height = 68.dp).clip(RoundedCornerShape(10.dp))) {
+			Box(Modifier.size(width = 52.dp, height = 74.dp).clip(RoundedCornerShape(10.dp))) {
 				AsyncImage(
 					model = remember(manga) {
 						ImageRequest.Builder(context)
@@ -205,15 +284,19 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 					modifier = Modifier.fillMaxSize().coverBlur(manga),
 				)
 			}
-			Column(Modifier.weight(1f)) {
+			Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
 				Text(
 					text = manga.title,
-					style = MaterialTheme.typography.titleMedium,
+					style = MaterialTheme.typography.titleSmall,
+					fontWeight = FontWeight.SemiBold,
+					// A plain Row gives no content colour, which left the title dark on the dark card
+					color = MaterialTheme.colorScheme.onSurface,
 					maxLines = 2,
 					overflow = TextOverflow.Ellipsis,
 				)
 				Text(
-					text = manga.source.name,
+					// The source's own name; its internal id is not something to read
+					text = manga.source.getTitle(context),
 					style = MaterialTheme.typography.bodySmall,
 					color = MaterialTheme.colorScheme.onSurfaceVariant,
 					maxLines = 1,
