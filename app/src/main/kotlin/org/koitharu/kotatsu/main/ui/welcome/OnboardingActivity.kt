@@ -38,7 +38,6 @@ import org.koitharu.kotatsu.kotatsumigration.ui.showKotatsuMigrationCompleteDial
 import org.koitharu.kotatsu.main.ui.MainActivity
 import org.koitharu.kotatsu.secret.SecretSpace
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
-import org.koitharu.kotatsu.sync.SyncFeature
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -66,10 +65,6 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
         if (uri != null) RestoreDialogFragment.show(supportFragmentManager, uri)
     }
 
-    private val googleSignInLauncher = registerForActivityResult(
-        ActivityResultContracts.StartIntentSenderForResult(),
-    ) { result -> if (result.resultCode == RESULT_OK) viewModel.handleGoogleSignInResult(result.data) }
-
     private val installPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult(),
     ) { refreshPermissionStates() }
@@ -87,17 +82,6 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
         setContentView(ActivityOnboardingBinding.inflate(layoutInflater))
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        viewModel.onGoogleSignInLaunch.observeEvent(this) { consent ->
-            googleSignInLauncher.launch(IntentSenderRequest.Builder(consent).build())
-        }
-        viewModel.onGoogleSignInCompleted.observeEvent(this) { success ->
-            Toast.makeText(
-                this,
-                if (success) R.string.sync_completed else R.string.sync_error,
-                Toast.LENGTH_LONG,
-            ).show()
-            if (success) syncStepDone++
-        }
         viewModel.onBackupRestored.observeEvent(this) { result ->
             val text = if (result.error != null) {
                 result.error.getDisplayMessage(resources)
@@ -178,7 +162,6 @@ class OnboardingActivity : BaseActivity<ActivityOnboardingBinding>() {
                         onPermissionInstall = ::requestInstallPermission,
                         onPermissionNotifications = ::requestNotificationsPermission,
                         onPermissionBattery = ::requestBatteryOptimizationPermission,
-                        onSignInGoogle = if (SyncFeature.IS_AVAILABLE) viewModel::launchGoogleSignIn else null,
                         onRestoreDropSauce = {
                             restoreDropSauceLauncher.launch(arrayOf("application/*", "*/*"))
                         },

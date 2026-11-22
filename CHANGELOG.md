@@ -52,6 +52,9 @@
 - Needs review is a full screen list with covers and full titles, grouped by tracker
 - The tracker sync report is removed, since progress already follows your reading and refreshes
 
+### Removed
+- Google Drive sync, with its settings entry, sign-in step in the welcome screen and Google Play Services dependency
+
 ## 1.1.5 (2026-11-20)
 
 ### New

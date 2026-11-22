@@ -866,10 +866,6 @@ class AppRouter private constructor(
             Intent(context, SettingsActivity::class.java)
                 .setAction(ACTION_TRACKER)
 
-        fun syncSettingsIntent(context: Context) =
-            Intent(context, SettingsActivity::class.java)
-                .setAction(ACTION_SYNC)
-
         fun proxySettingsIntent(context: Context) =
             Intent(context, SettingsActivity::class.java)
                 .setAction(ACTION_PROXY)
@@ -949,7 +945,6 @@ class AppRouter private constructor(
         const val ACTION_MANAGE_DISCORD = "${BuildConfig.APPLICATION_ID}.action.MANAGE_DISCORD"
         const val ACTION_SUGGESTIONS = "${BuildConfig.APPLICATION_ID}.action.MANAGE_SUGGESTIONS"
         const val ACTION_TRACKER = "${BuildConfig.APPLICATION_ID}.action.MANAGE_TRACKER"
-        const val ACTION_SYNC = "${BuildConfig.APPLICATION_ID}.action.MANAGE_SYNC"
 
         private const val TYPE_TEXT = "text/plain"
         private const val TYPE_CBZ = "application/x-cbz"

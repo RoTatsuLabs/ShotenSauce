@@ -15,7 +15,6 @@ import org.koitharu.kotatsu.core.util.ext.call
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.local.data.LocalStorageManager
 import org.koitharu.kotatsu.parsers.util.runCatchingCancellable
-import org.koitharu.kotatsu.sync.SyncFeature
 import javax.inject.Inject
 
 data class RestoreBackupResult(
@@ -28,7 +27,6 @@ class WelcomeViewModel @Inject constructor(
 	private val settings: AppSettings,
 	private val storageManager: LocalStorageManager,
 	private val backupManager: MihonBackupManager,
-	private val syncFeature: SyncFeature,
 ) : BaseViewModel() {
 
 	val selectedTheme = MutableStateFlow(settings.theme)
@@ -36,8 +34,6 @@ class WelcomeViewModel @Inject constructor(
 	val isAmoledEnabled = MutableStateFlow(settings.isAmoledTheme)
 	val storageSummary = MutableStateFlow<String?>(null)
 	val onBackupRestored = MutableEventFlow<RestoreBackupResult>()
-	val onGoogleSignInLaunch = MutableEventFlow<PendingIntent>()
-	val onGoogleSignInCompleted = MutableEventFlow<Boolean>()
 
 	init {
 		launchJob(Dispatchers.Default) {
@@ -90,29 +86,6 @@ class WelcomeViewModel @Inject constructor(
 				),
 			)
 		}
-	}
-
-	fun launchGoogleSignIn() {
-		launchLoadingJob(Dispatchers.Default) {
-			runCatchingCancellable { syncFeature.beginSignIn() }
-				.onSuccess { consent -> if (consent != null) onGoogleSignInLaunch.call(consent) else onGoogleSignedIn() }
-				.onFailure { onGoogleSignInCompleted.call(false) }
-		}
-	}
-
-	fun handleGoogleSignInResult(data: Intent?) {
-		launchLoadingJob(Dispatchers.Default) {
-			if (runCatchingCancellable { syncFeature.finishSignIn(data) }.isSuccess) {
-				onGoogleSignedIn()
-			} else {
-				onGoogleSignInCompleted.call(false)
-			}
-		}
-	}
-
-	private suspend fun onGoogleSignedIn() {
-		syncFeature.onSignedIn()
-		onGoogleSignInCompleted.call(true)
 	}
 
 	fun completeOnboarding() {

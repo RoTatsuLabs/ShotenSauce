@@ -54,7 +54,6 @@ import org.koitharu.kotatsu.settings.compose.SettingsItem
 import org.koitharu.kotatsu.settings.compose.SettingsScaffold
 import org.koitharu.kotatsu.settings.sources.ExtensionsSettingsFragment
 import org.koitharu.kotatsu.settings.tracker.TrackerSettingsFragment
-import org.koitharu.kotatsu.sync.SyncFeature
 import javax.inject.Inject
 
 /**
@@ -121,11 +120,6 @@ private enum class SettingsSection(
 	val fragmentClass: Class<out Fragment>?, // null = not in this version of the app
 	val tintIcon: Boolean = true,
 ) {
-	SYNC(
-		R.string.google_drive_sync, R.drawable.ic_gdrive, "sync",
-		intArrayOf(R.string.sync_sign_in, R.string.sync_frequency),
-		SyncFeature.settingsFragmentClass,
-	),
 	APPEARANCE(
 		R.string.appearance, R.drawable.ic_appearance, "appearance",
 		intArrayOf(R.string.theme, R.string.list_mode, R.string.language),

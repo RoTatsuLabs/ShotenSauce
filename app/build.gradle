@@ -195,10 +195,7 @@ android {
 			'CustomViewStyleable',
 			'ClickableViewAccessibility',
 			'SetTextI18n',
-			'NotifyDataSetChanged',
-			// Play SDK Index policy notes on play-services-auth (GitHub version only).
-			// Irrelevant for GitHub distribution; not published to the Play Store.
-			'PlaySdkIndexNonCompliant'
+			'NotifyDataSetChanged'
 	}
 	// F-Droid rejects APKs carrying this block (dependency list encrypted for Google Play).
 	dependenciesInfo {
@@ -274,8 +271,6 @@ dependencies {
 	implementation libs.androidx.room.ktx
 	ksp libs.androidx.room.compiler
 
-	// Google Drive sign-in; the F-Droid version has no Drive sync and no Play Services.
-	githubImplementation libs.play.services.auth
 
 	implementation libs.okhttp
 	implementation libs.okhttp.brotli

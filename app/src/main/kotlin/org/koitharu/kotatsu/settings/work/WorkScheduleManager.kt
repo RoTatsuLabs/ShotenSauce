@@ -12,7 +12,6 @@ import org.koitharu.kotatsu.extensions.install.ExtensionUpdateWorker
 import org.koitharu.kotatsu.lnreader.LnPluginManager
 import org.koitharu.kotatsu.scrobbling.autotrack.AutoPauseWorker
 import org.koitharu.kotatsu.suggestions.ui.SuggestionsWorker
-import org.koitharu.kotatsu.sync.SyncFeature
 import org.koitharu.kotatsu.tracker.work.TrackWorker
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -23,7 +22,6 @@ class WorkScheduleManager @Inject constructor(
 	private val suggestionScheduler: SuggestionsWorker.Scheduler,
 	private val trackerScheduler: TrackWorker.Scheduler,
 	private val backupScheduler: PeriodicalBackupWorker.Scheduler,
-	private val syncFeature: SyncFeature,
 	private val extensionUpdateScheduler: ExtensionUpdateWorker.Scheduler,
 	private val autoPauseScheduler: AutoPauseWorker.Scheduler,
 	@ApplicationContext private val context: Context,
@@ -71,6 +69,8 @@ class WorkScheduleManager @Inject constructor(
 				updateWorker(extensionUpdateScheduler, enabled, force = false)
 				if (enabled) {
 					processLifecycleScope.launch(Dispatchers.Default) {
+			// Jobs left queued by the removed Google Drive sync would never run again.
+			cancelLegacySyncWork()
 						extensionUpdateScheduler.startNow()
 					}
 				}
@@ -78,9 +78,14 @@ class WorkScheduleManager @Inject constructor(
 		}
 	}
 
+	private fun cancelLegacySyncWork() {
+		val workManager = androidx.work.WorkManager.getInstance(context)
+		workManager.cancelUniqueWork("gdrive_sync_periodic")
+		workManager.cancelUniqueWork("gdrive_sync_soon")
+	}
+
 	fun init() {
 		settings.subscribe(this)
-		syncFeature.startTriggers()
 		processLifecycleScope.launch(Dispatchers.Default) {
 			updateWorkerImpl(trackerScheduler, settings.isTrackerEnabled, true)
 			updateWorkerImpl(suggestionScheduler, settings.isSuggestionsEnabled, true)
@@ -90,11 +95,6 @@ class WorkScheduleManager @Inject constructor(
 				isEnabled = settings.isPeriodicalBackupEnabled && settings.periodicalBackupDirectory != null,
 				force = false,
 			)
-			// Sync interval lives in its own prefs file (not observed here); just re-assert the schedule.
-			// Foreground/background syncs are driven by SyncTrigger. No sync in the F-Droid version.
-			syncFeature.periodicScheduler?.let {
-				updateWorkerImpl(scheduler = it, isEnabled = syncFeature.isPeriodicEnabled, force = false)
-			}
 			val extensionUpdatesEnabled = isExtensionUpdateWorkerNeeded()
 			updateWorkerImpl(extensionUpdateScheduler, extensionUpdatesEnabled, force = false)
 			if (extensionUpdatesEnabled) {
