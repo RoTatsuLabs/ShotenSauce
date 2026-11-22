@@ -21,6 +21,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.details.ui.model.HistoryInfo
@@ -32,16 +33,14 @@ internal fun ProgressCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: 
 	val res = ctx.resources
 	val chaptersText = when {
 		isLoading && historyInfo.totalChapters < 0 -> stringResource(R.string.loading_)
-		historyInfo.currentChapter >= 0 -> withTime(
-			stringResource(R.string.chapter_d_of_d, historyInfo.currentChapter + 1, historyInfo.totalChapters),
-			historyInfo, res,
-		)
+		historyInfo.currentChapter >= 0 ->
+			stringResource(R.string.chapter_d_of_d, historyInfo.currentChapter + 1, historyInfo.totalChapters)
 		historyInfo.totalChapters == 0 -> stringResource(R.string.no_chapters)
 		historyInfo.totalChapters == -1 -> stringResource(R.string.error_occurred)
-		else -> withTime(
-			pluralStringResource(R.plurals.chapters, historyInfo.totalChapters, historyInfo.totalChapters),
-			historyInfo, res,
-		)
+		else -> pluralStringResource(R.plurals.chapters, historyInfo.totalChapters, historyInfo.totalChapters)
+	}
+	val timeText = historyInfo.estimatedTime?.let { time ->
+		time.formatShort(res)?.let { stringResource(if (time.isContinue) R.string.reading_time_left else R.string.reading_time_total, it) }
 	}
 	val hasHistory = historyInfo.history != null
 	val percent = historyInfo.percent.coerceIn(0f, 1f)
@@ -89,10 +88,15 @@ internal fun ProgressCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: 
 				modifier = Modifier.fillMaxWidth(),
 			)
 		}
+		if (timeText != null) {
+			Spacer(Modifier.height(if (showProgress) 8.dp else 6.dp))
+			Text(
+				text = timeText,
+				style = MaterialTheme.typography.labelMedium,
+				color = MaterialTheme.colorScheme.onSurfaceVariant,
+				textAlign = if (showProgress) TextAlign.End else TextAlign.Start,
+				modifier = Modifier.fillMaxWidth(),
+			)
+		}
 	}
-}
-
-private fun withTime(base: String, info: HistoryInfo, res: android.content.res.Resources): String {
-	val time = info.estimatedTime?.formatShort(res) ?: return base
-	return res.getString(R.string.chapters_time_pattern, base, time)
 }

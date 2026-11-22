@@ -1,6 +1,11 @@
 package org.koitharu.kotatsu.details.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.res.pluralStringResource
+import org.koitharu.kotatsu.details.ui.model.HistoryInfo
+import org.koitharu.kotatsu.parsers.model.MangaState
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.runtime.getValue
 import org.koitharu.kotatsu.core.prefs.AppSettings
@@ -50,6 +55,9 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.ImageLoader
+import org.koitharu.kotatsu.details.ui.scrobbling.labelResId
+import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerService
+import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingInfo
 import coil3.compose.AsyncImage
 import coil3.request.CachePolicy
 import coil3.request.ImageRequest
@@ -77,14 +85,10 @@ internal fun HeroSection(
 	centered: Boolean,
 	manga: Manga,
 	details: MangaDetails?,
-	sourceTitle: String?,
 	accent: Color,
 	imageLoader: ImageLoader,
 	coverUrl: String?,
 	coverRefreshes: Int,
-	favouriteLabel: String,
-	isFavourite: Boolean,
-	onFavouriteClick: () -> Unit,
 	actions: DetailsExpressiveActions,
 ) {
 	val nsfwLabel = when (manga.contentRating) {
@@ -114,24 +118,13 @@ internal fun HeroSection(
 				actions = actions,
 			)
 			Spacer(Modifier.height(20.dp))
-			HeroTexts(centered = true, manga = manga, accent = accent, actions = actions)
-			Spacer(Modifier.height(16.dp))
-			StatPills(
-				centered = true,
-				showContentRating = true,
-				manga = manga,
-				sourceTitle = sourceTitle,
-				accent = accent,
-				imageLoader = imageLoader,
-				onSourceClick = { actions.onSourceClick(manga) },
-			)
+			HeroTexts(centered = true, manga = manga, accent = accent, actions = actions, ratingLabel = nsfwLabel)
 		}
 	} else {
 		val density = LocalDensity.current
 		val compactCoverWidthPx = with(density) { COMPACT_COVER_WIDTH.roundToPx() }
 		val compactCoverHeightPx = with(density) { COMPACT_COVER_HEIGHT.roundToPx() }
 		val spacingPx = with(density) { 16.dp.roundToPx() }
-		val spacerHeightPx = with(density) { 14.dp.roundToPx() }
 
 		Layout(
 			modifier = Modifier
@@ -151,52 +144,19 @@ internal fun HeroSection(
 					actions = actions,
 				)
 				Column {
-					HeroTexts(centered = false, manga = manga, accent = accent, actions = actions)
-					Spacer(Modifier.height(12.dp))
-					StatPills(
-						centered = false,
-						showContentRating = false,
-						manga = manga,
-						sourceTitle = sourceTitle,
-						accent = accent,
-						imageLoader = imageLoader,
-						onSourceClick = { actions.onSourceClick(manga) },
-					)
+					HeroTexts(centered = false, manga = manga, accent = accent, actions = actions, ratingLabel = null)
 				}
-				FavouriteButton(
-					label = favouriteLabel,
-					isFavourite = isFavourite,
-					accent = accent,
-					onClick = onFavouriteClick,
-					onQuickClick = actions.onQuickFavoriteClick,
-					horizontalPadding = 0.dp,
-				)
 			},
 		) { measurables, constraints ->
 			val remainingWidth = (constraints.maxWidth - compactCoverWidthPx - spacingPx).coerceAtLeast(0)
-
-			val upperPlaceable = measurables[1].measure(
-				Constraints.fixedWidth(remainingWidth)
-			)
-
-			val buttonPlaceable = measurables[2].measure(
-				Constraints.fixedWidth(remainingWidth)
-			)
-
-			val naturalInfoHeight = upperPlaceable.height + spacerHeightPx + buttonPlaceable.height
-			val coverHeight = maxOf(compactCoverHeightPx, naturalInfoHeight)
-
-			val coverPlaceable = measurables[0].measure(
-				Constraints.fixed(compactCoverWidthPx, coverHeight)
-			)
+			val textPlaceable = measurables[1].measure(Constraints.fixedWidth(remainingWidth))
+			val coverHeight = maxOf(compactCoverHeightPx, textPlaceable.height)
+			val coverPlaceable = measurables[0].measure(Constraints.fixed(compactCoverWidthPx, coverHeight))
 
 			layout(constraints.maxWidth, coverHeight) {
 				coverPlaceable.placeRelative(0, 0)
-				upperPlaceable.placeRelative(compactCoverWidthPx + spacingPx, 0)
-				buttonPlaceable.placeRelative(
-					compactCoverWidthPx + spacingPx,
-					coverHeight - buttonPlaceable.height
-				)
+				// Sit the texts on the cover's bottom edge, with the buttons right beneath them
+				textPlaceable.placeRelative(compactCoverWidthPx + spacingPx, coverHeight - textPlaceable.height)
 			}
 		}
 	}
@@ -296,6 +256,7 @@ internal fun HeroTexts(
 	manga: Manga,
 	accent: Color,
 	actions: DetailsExpressiveActions,
+	ratingLabel: String?,
 ) {
 	val align = if (centered) TextAlign.Center else TextAlign.Start
 	Text(
@@ -308,11 +269,17 @@ internal fun HeroTexts(
 		overflow = TextOverflow.Ellipsis,
 		modifier = Modifier.clickable { actions.onTitleClick(manga.title) },
 	)
-	val altTitle = manga.altTitles.firstOrNull()?.takeIf { it.isNotBlank() }
-	if (altTitle != null) {
+	val altTitles = manga.altTitles.filter { it.isNotBlank() }
+	if (altTitles.isNotEmpty()) {
+		val others = altTitles.size - 1
+		val altText = if (others > 0) {
+			altTitles.first() + " · " + pluralStringResource(R.plurals.also_known_as_others, others, others)
+		} else {
+			altTitles.first()
+		}
 		Spacer(Modifier.height(6.dp))
 		Text(
-			text = altTitle,
+			text = altText,
 			style = MaterialTheme.typography.bodyMedium,
 			color = MaterialTheme.colorScheme.onSurfaceVariant,
 			textAlign = align,
@@ -336,158 +303,107 @@ internal fun HeroTexts(
 	}
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Favourite and tracker status side by side, right under the cover and title. */
 @Composable
-internal fun StatPills(
-	centered: Boolean,
-	showContentRating: Boolean,
-	manga: Manga,
-	sourceTitle: String?,
+internal fun HeroActionRow(
+	scrobblings: List<ScrobblingInfo>,
 	accent: Color,
-	imageLoader: ImageLoader,
-	onSourceClick: () -> Unit,
+	favouriteLabel: String,
+	isFavourite: Boolean,
+	onTrackerClick: () -> Unit,
+	onFavouriteClick: () -> Unit,
+	onQuickFavouriteClick: () -> Unit,
 ) {
-	val ctx = LocalContext.current
-	FlowRow(
-		modifier = Modifier.fillMaxWidth(),
-		horizontalArrangement = if (centered) {
-			Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-		} else {
-			Arrangement.spacedBy(8.dp)
-		},
-		verticalArrangement = Arrangement.spacedBy(8.dp),
+	Row(
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(horizontal = SCREEN_PADDING),
+		horizontalArrangement = Arrangement.spacedBy(10.dp),
+		verticalAlignment = Alignment.CenterVertically,
 	) {
-		val hasContentRating = showContentRating && (manga.contentRating == ContentRating.SUGGESTIVE || manga.contentRating == ContentRating.ADULT)
-		if (hasContentRating || manga.state != null || !manga.isLocal) {
-			Row(
-				modifier = Modifier.fillMaxWidth(),
-				horizontalArrangement = if (centered) {
-					Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
-				} else {
-					Arrangement.spacedBy(8.dp)
-				},
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				if (hasContentRating) {
-					when (manga.contentRating) {
-						ContentRating.SUGGESTIVE -> Pill(text = "16+", accent = accent)
-						ContentRating.ADULT -> Pill(text = "18+", accent = accent)
-					}
-				}
-				manga.state?.let { state ->
-					Pill(text = stringResource(state.titleResId), accent = accent)
-				}
-				if (!manga.isLocal) {
-					val srcText = sourceTitle?.takeUnless { it.isBlank() } ?: manga.source.getTitle(ctx)
-					val faviconRequest = remember(manga.source) {
-						ImageRequest.Builder(ctx)
-							.data(manga.source.faviconUri())
-							.mangaSourceExtra(manga.source)
-							.crossfade(true)
-							.build()
-					}
-					SourcePill(
-						text = srcText,
-						faviconRequest = faviconRequest,
-						imageLoader = imageLoader,
-						autoResize = !centered,
-						onClick = onSourceClick,
-						modifier = if (centered) Modifier else Modifier.weight(1f, fill = false),
-					)
-				}
-			}
-		}
+		FavouriteButton(
+			label = favouriteLabel,
+			isFavourite = isFavourite,
+			accent = accent,
+			onClick = onFavouriteClick,
+			onQuickClick = onQuickFavouriteClick,
+			horizontalPadding = 0.dp,
+			modifier = Modifier.weight(1f),
+		)
+		HeroTrackerButton(
+			info = scrobblings.firstOrNull(),
+			accent = accent,
+			onClick = onTrackerClick,
+			modifier = Modifier.weight(1f),
+		)
 	}
 }
 
 @Composable
-internal fun SourcePill(
-	text: String,
-	faviconRequest: ImageRequest,
-	imageLoader: ImageLoader,
-	autoResize: Boolean,
+private fun HeroTrackerButton(
+	info: ScrobblingInfo?,
+	accent: Color,
 	onClick: () -> Unit,
-	modifier: Modifier = Modifier,
+	modifier: Modifier,
 ) {
 	Surface(
-		shape = RoundedCornerShape(50),
+		onClick = onClick,
+		shape = RoundedCornerShape(20.dp),
 		color = MaterialTheme.colorScheme.surfaceContainerHigh,
-		modifier = modifier.clickable(onClick = onClick),
+		modifier = modifier.height(52.dp),
 	) {
 		Row(
-			modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+			modifier = Modifier
+				.fillMaxSize()
+				.padding(horizontal = 12.dp),
 			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(6.dp),
+			horizontalArrangement = Arrangement.Center,
 		) {
-			AsyncImage(
-				model = faviconRequest,
-				imageLoader = imageLoader,
-				contentDescription = null,
-				error = painterResource(R.drawable.ic_manga_source),
-				fallback = painterResource(R.drawable.ic_manga_source),
-				modifier = Modifier
-					.size(16.dp)
-					.clip(RoundedCornerShape(4.dp)),
-			)
-			val labelStyle = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
-			val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-			if (autoResize) {
-				AutoResizeText(
-					text = text,
-					color = contentColor,
-					baseStyle = labelStyle,
-					minTextSize = 9.sp,
-					modifier = Modifier.weight(1f, fill = false),
+			if (info == null) {
+				Icon(
+					painter = painterResource(R.drawable.ic_add),
+					contentDescription = null,
+					tint = accent,
+					modifier = Modifier.size(20.dp),
+				)
+				Spacer(Modifier.width(8.dp))
+				Text(
+					text = stringResource(R.string.hero_track),
+					style = MaterialTheme.typography.titleSmall,
+					fontWeight = FontWeight.SemiBold,
+					color = accent,
+					maxLines = 1,
 				)
 			} else {
+				Icon(
+					painter = painterResource(
+						if (info.scrobbler == ScrobblerService.SHIKIMORI) {
+							R.drawable.ic_shikimori_raw
+						} else {
+							info.scrobbler.iconResId
+						},
+					),
+					contentDescription = null,
+					tint = Color.Unspecified,
+					modifier = Modifier.size(22.dp),
+				)
+				Spacer(Modifier.width(8.dp))
+				val status = info.status?.let { stringResource(it.labelResId) }
+				val progress = if (info.totalChapters > 0) {
+					"${info.chapter}/${info.totalChapters}"
+				} else {
+					info.chapter.toString()
+				}
 				Text(
-					text = text,
-					style = labelStyle,
-					color = contentColor,
+					text = listOfNotNull(status, progress).joinToString(" \u00B7 "),
+					style = MaterialTheme.typography.titleSmall,
+					fontWeight = FontWeight.SemiBold,
+					color = accent,
 					maxLines = 1,
 					overflow = TextOverflow.Ellipsis,
 				)
 			}
 		}
-	}
-}
-
-@Composable
-internal fun AutoResizeText(
-	text: String,
-	color: Color,
-	baseStyle: TextStyle,
-	minTextSize: TextUnit,
-	modifier: Modifier = Modifier,
-) {
-	val measurer = rememberTextMeasurer()
-	val density = LocalDensity.current
-	BoxWithConstraints(modifier) {
-		val maxWidthPx = with(density) { maxWidth.toPx() }
-		val fontSize = remember(text, maxWidthPx, baseStyle) {
-			var size = baseStyle.fontSize
-			if (maxWidthPx > 0f && size.isSp) {
-				while (size.value > minTextSize.value) {
-					val width = measurer.measure(
-						text = text,
-						style = baseStyle.copy(fontSize = size),
-						maxLines = 1,
-						softWrap = false,
-					).size.width
-					if (width <= maxWidthPx) break
-					size = (size.value - 1f).sp
-				}
-			}
-			size
-		}
-		Text(
-			text = text,
-			color = color,
-			style = baseStyle.copy(fontSize = fontSize),
-			maxLines = 1,
-			softWrap = false,
-			overflow = TextOverflow.Ellipsis,
-		)
 	}
 }
 
@@ -499,6 +415,7 @@ internal fun FavouriteButton(
 	onClick: () -> Unit,
 	onQuickClick: () -> Unit = {},
 	horizontalPadding: Dp = SCREEN_PADDING,
+	modifier: Modifier = Modifier.fillMaxWidth(),
 ) {
 	val color = if (isFavourite) accent else accent.copy(alpha = 0.16f)
 	val contentColor = if (isFavourite) {
@@ -514,8 +431,7 @@ internal fun FavouriteButton(
 	Surface(
 		shape = shape,
 		color = color,
-		modifier = Modifier
-			.fillMaxWidth()
+		modifier = modifier
 			.padding(horizontal = horizontalPadding)
 			.height(52.dp)
 			.clip(shape)

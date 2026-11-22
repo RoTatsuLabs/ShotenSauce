@@ -142,49 +142,48 @@ fun DetailsExpressiveScreen(
 				centered = centered,
 				manga = manga,
 				details = details,
-				sourceTitle = sourceTitle,
 				accent = accentColor,
 				imageLoader = imageLoader,
 				coverUrl = coverUrl,
 				coverRefreshes = coverRefreshes,
-				favouriteLabel = favLabel,
-				isFavourite = isFavourite,
-				onFavouriteClick = { actions.onFavoriteClick(manga) },
 				actions = actions,
 			)
 
-			if (centered) {
-				Spacer(Modifier.height(20.dp))
-				FavouriteButton(
-					label = favLabel,
-					isFavourite = isFavourite,
-					accent = accentColor,
-					onClick = { actions.onFavoriteClick(manga) },
-					onQuickClick = actions.onQuickFavoriteClick,
-				)
-			}
-
-			Spacer(Modifier.height(8.dp))
-			ProgressCard(historyInfo = historyInfo, isLoading = isLoading, accent = accentColor)
-
-			DescriptionCard(
-				description = details.description,
-				manga = manga,
-				details = details,
+			Spacer(Modifier.height(18.dp))
+			HeroActionRow(
+				scrobblings = scrobblings,
 				accent = accentColor,
+				favouriteLabel = favLabel,
+				isFavourite = isFavourite,
+				onTrackerClick = if (scrobblings.isEmpty()) {
+					actions.onScrobblingMore
+				} else {
+					{ actions.onScrobblingCardClick(0) }
+				},
+				onFavouriteClick = { actions.onFavoriteClick(manga) },
+				onQuickFavouriteClick = actions.onQuickFavoriteClick,
 			)
 
 			TagsSection(tags = tags, accent = accentColor, onTagClick = actions.onTagClick)
 
-			if (scrobblings.isNotEmpty()) {
-				ScrobblingSection(
-					items = scrobblings,
-					imageLoader = imageLoader,
-					accent = accentColor,
-					onMore = actions.onScrobblingMore,
-					onCardClick = actions.onScrobblingCardClick,
-				)
-			}
+			Spacer(Modifier.height(8.dp))
+			InfoGrid(
+				manga = manga,
+				details = details,
+				formats = remember(manga.tags, scrobblings) {
+					resolveFormats(manga.tags.formatTags(), scrobblings.map { it.type })
+				},
+				chapterCount = historyInfo.totalChapters.coerceAtLeast(0),
+				sourceTitle = sourceTitle,
+				accent = accentColor,
+				onFormatClick = actions.onTagClick,
+				onSourceClick = { actions.onSourceClick(manga) },
+			)
+			ProgressCard(historyInfo = historyInfo, isLoading = isLoading, accent = accentColor)
+
+			DescriptionCard(description = details.description)
+
+			AltTitlesCard(titles = manga.altTitles)
 
 			if (related.isNotEmpty()) {
 				RelatedSection(
@@ -207,18 +206,29 @@ fun DetailsExpressiveScreen(
 			}
 		}
 
-			// Floating action dock: a "N chapters" pill stacked above the read FAB. Both pin to the
-			// bottom-end and stay clear of the navigation bar; the modal chapters sheet draws its own
-			// scrim over them, so they read as "behind" the sheet without any extra hide/show logic.
+			// Bottom bar: read button and the chapters pill, pinned to the bottom edge. The content above
+			// reserves room for it, and a fade keeps it legible over whatever scrolls underneath.
 			ActionDock(
 				historyInfo = historyInfo,
 				isLoading = isLoading,
 				accent = accentColor,
 				actions = actions,
 				modifier = Modifier
-					.align(Alignment.BottomEnd)
-					.padding(end = SCREEN_PADDING, bottom = bottomContentPadding + 16.dp)
-					.dockGlow(scheme.surface),
+					.align(Alignment.BottomCenter)
+					.fillMaxWidth()
+					.background(
+						Brush.verticalGradient(
+							0f to Color.Transparent,
+							0.3f to scheme.surface.copy(alpha = 0.92f),
+							1f to scheme.surface,
+						),
+					)
+					.padding(
+						start = SCREEN_PADDING,
+						end = SCREEN_PADDING,
+						top = 24.dp,
+						bottom = bottomContentPadding + 12.dp,
+					),
 			)
 
 	}

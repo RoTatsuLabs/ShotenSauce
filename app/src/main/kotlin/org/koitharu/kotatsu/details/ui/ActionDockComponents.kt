@@ -50,17 +50,23 @@ internal fun ActionDock(
 	actions: DetailsExpressiveActions,
 	modifier: Modifier = Modifier,
 ) {
-	Column(
+	Row(
 		modifier = modifier,
-		horizontalAlignment = Alignment.End,
-		verticalArrangement = Arrangement.spacedBy(12.dp),
+		horizontalArrangement = Arrangement.spacedBy(12.dp),
+		verticalAlignment = Alignment.Bottom,
 	) {
 		val chapterCount = historyInfo.totalChapters
 		val onChaptersClick = actions.onChaptersClick
 		if (chapterCount > 0 && onChaptersClick != null) {
 			ChaptersPill(count = chapterCount, onClick = onChaptersClick)
 		}
-		ReadFab(historyInfo = historyInfo, isLoading = isLoading, accent = accent, actions = actions)
+		ReadFab(
+			historyInfo = historyInfo,
+			isLoading = isLoading,
+			accent = accent,
+			actions = actions,
+			modifier = Modifier.weight(1f),
+		)
 	}
 }
 
@@ -101,6 +107,7 @@ internal fun ReadFab(
 	isLoading: Boolean,
 	accent: Color,
 	actions: DetailsExpressiveActions,
+	modifier: Modifier = Modifier,
 ) {
 	val isChaptersLoading = isLoading && (historyInfo.totalChapters <= 0 || historyInfo.isChapterMissing)
 	val enabled = !isChaptersLoading && historyInfo.isValid
@@ -130,6 +137,7 @@ internal fun ReadFab(
 	val onColor = if (enabled) baseContent else baseContent.copy(alpha = 0.7f)
 
 	Surface(
+		modifier = modifier,
 		shape = RoundedCornerShape(24.dp),
 		color = container,
 		shadowElevation = 6.dp,

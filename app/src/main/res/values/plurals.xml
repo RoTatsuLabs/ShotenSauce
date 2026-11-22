@@ -4,6 +4,10 @@
 		<item quantity="one">%1$d item</item>
 		<item quantity="other">%1$d items</item>
 	</plurals>
+	<plurals name="also_known_as_others">
+		<item quantity="one">also known as %1$d other title</item>
+		<item quantity="other">also known as %1$d other titles</item>
+	</plurals>
 	<plurals name="search_genres">
 		<item quantity="one">Search %1$d genre</item>
 		<item quantity="other">Search %1$d genres</item>

@@ -38,6 +38,10 @@
 - Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
 
 ### Improved
+- Title details: the chapter list button sits left of Continue in the bottom bar
+- Title details: wide (panorama) covers keep their shape beside the title instead of being cropped to portrait
+- Title details: the status label above the title is gone, the title sits at the top next to the cover
+- Title details take their accent colour from the cover (Appearance, Colours from the cover)
 - New Time format setting in Appearance: follow the system, or force 12 or 24 hours (reader clock, statistics)
 - Title details: the Tracking card is gone, the tracker status button under the cover opens the same info
 - Title details: genres sit in one swipeable row right under the action buttons

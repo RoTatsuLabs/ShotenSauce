@@ -26,7 +26,6 @@ import org.koitharu.kotatsu.R
 
 internal val SCREEN_PADDING = 20.dp
 internal val CARD_CORNER = 26.dp
-internal const val TAGS_COLLAPSED_ROWS = 3
 internal val DETAIL_DOCK_RESERVE = 128.dp
 
 internal fun Color.luminanceIsLight(): Boolean =

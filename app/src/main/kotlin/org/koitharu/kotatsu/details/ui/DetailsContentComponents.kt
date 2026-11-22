@@ -5,6 +5,8 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -79,6 +81,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextOverflow
@@ -113,9 +116,6 @@ private const val DESCRIPTION_COLLAPSED_LINES = 5
 @Composable
 internal fun DescriptionCard(
 	description: CharSequence?,
-	manga: Manga,
-	details: MangaDetails?,
-	accent: Color,
 ) {
 	val linkColor = MaterialTheme.colorScheme.primary
 	// The appearance setting only decides how a long description *starts*; tapping still toggles it
@@ -144,42 +144,25 @@ internal fun DescriptionCard(
 		label = "descriptionFade",
 	)
 	SectionCard {
-		val locale = details?.getLocale()
-		Row(
-			modifier = Modifier.fillMaxWidth(),
-			verticalAlignment = Alignment.CenterVertically,
-		) {
+		Row(verticalAlignment = Alignment.CenterVertically) {
 			Text(
 				text = stringResource(R.string.description),
 				style = MaterialTheme.typography.titleMedium,
 				fontWeight = FontWeight.SemiBold,
 				color = MaterialTheme.colorScheme.onSurface,
+				modifier = Modifier.weight(1f),
 			)
-			Spacer(modifier = Modifier.weight(1f))
-			locale?.let {
-				Pill(
-					text = it.getDisplayLanguage(it).replaceFirstChar { ch -> ch.titlecase(it) },
-					accent = accent,
-					highlighted = true,
-				) {
-					Icon(
-						painter = painterResource(R.drawable.ic_language),
-						contentDescription = null,
-						tint = accent,
-						modifier = Modifier.size(15.dp),
-					)
-				}
-				Spacer(modifier = Modifier.width(8.dp))
-			}
-			if (manga.hasRating) {
-				Pill(text = String.format(Locale.ROOT, "%.1f", manga.rating * 5f), accent = accent, highlighted = true) {
-					Icon(
-						painter = painterResource(R.drawable.ic_star_small),
-						contentDescription = null,
-						tint = accent,
-						modifier = Modifier.size(15.dp),
-					)
-				}
+			if (hasOverflow || expanded && text.isNotEmpty()) {
+				Text(
+					text = stringResource(if (expanded) R.string.collapse else R.string.more),
+					style = MaterialTheme.typography.labelLarge,
+					fontWeight = FontWeight.Medium,
+					color = linkColor,
+					modifier = Modifier.clickable {
+						expanded = !expanded
+						if (expanded) isSettledCollapsed = false
+					},
+				)
 			}
 		}
 		Spacer(Modifier.height(10.dp))
@@ -300,249 +283,36 @@ private fun CharSequence.toAnnotatedString(linkColor: Color, linksClickable: Boo
 	}
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+/** Genres in one swipeable row, right under the action buttons so they are visible without scrolling. */
 @Composable
-@Suppress("DEPRECATION")
 internal fun TagsSection(tags: List<ChipsView.ChipModel>, accent: Color, onTagClick: (MangaTag) -> Unit) {
 	if (tags.isEmpty()) return
-	var expanded by rememberSaveable { mutableStateOf(false) }
-	val measurer = rememberTextMeasurer()
-	val density = LocalDensity.current
-	val chipStyle = MaterialTheme.typography.labelLarge
-
-	BoxWithConstraints(
+	Row(
 		modifier = Modifier
 			.fillMaxWidth()
-			.padding(horizontal = SCREEN_PADDING, vertical = 7.dp),
-	) {
-		val needsToggle = remember(tags, maxWidth, chipStyle) {
-			with(density) {
-				val available = maxWidth.toPx()
-				val chipHorizontalPadding = 28.dp.toPx()
-				val gap = 8.dp.toPx()
-				var rows = 1
-				var rowWidth = 0f
-				for (tag in tags) {
-					val chipWidth = measurer.measure(tag.title?.toString().orEmpty(), chipStyle).size.width + chipHorizontalPadding
-					rowWidth = when {
-						rowWidth == 0f -> chipWidth
-						rowWidth + gap + chipWidth <= available -> rowWidth + gap + chipWidth
-						else -> {
-							rows++
-							chipWidth
-						}
-					}
-				}
-				rows > TAGS_COLLAPSED_ROWS
-			}
-		}
-
-		FlowRow(
-			modifier = Modifier.fillMaxWidth(),
-			horizontalArrangement = Arrangement.spacedBy(8.dp),
-			verticalArrangement = Arrangement.spacedBy(8.dp),
-			maxLines = if (needsToggle && !expanded) TAGS_COLLAPSED_ROWS else Int.MAX_VALUE,
-			overflow = if (needsToggle) {
-				androidx.compose.foundation.layout.FlowRowOverflow.expandOrCollapseIndicator(
-					expandIndicator = {
-						TagToggleChip(text = stringResource(R.string.more), accent = accent, expanded = false) { expanded = true }
-					},
-					collapseIndicator = {
-						TagToggleChip(text = stringResource(R.string.collapse), accent = accent, expanded = true) { expanded = false }
-					},
-				)
-			} else {
-				androidx.compose.foundation.layout.FlowRowOverflow.Visible
-			},
-		) {
-			tags.forEach { tag ->
-				val mangaTag = tag.data as? MangaTag
-				val warningColor = if (tag.tint != 0) colorResource(tag.tint) else null
-				Surface(
-					shape = RoundedCornerShape(15.dp),
-					color = (warningColor ?: accent).copy(alpha = 0.16f),
-					onClick = { if (mangaTag != null) onTagClick(mangaTag) },
-				) {
-					Text(
-						text = tag.title?.toString().orEmpty(),
-						style = MaterialTheme.typography.labelLarge,
-						color = warningColor ?: accent,
-						modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
-					)
-				}
-			}
-		}
-	}
-}
-
-@Composable
-internal fun TagToggleChip(text: String, accent: Color, expanded: Boolean, onClick: () -> Unit) {
-	Surface(
-		shape = RoundedCornerShape(15.dp),
-		color = Color.Transparent,
-		border = BorderStroke(1.dp, accent.copy(alpha = 0.6f)),
-		onClick = onClick,
-	) {
-		Row(
-			modifier = Modifier.padding(start = 14.dp, end = 10.dp, top = 9.dp, bottom = 9.dp),
-			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.spacedBy(4.dp),
-		) {
-			Text(
-				text = text,
-				style = MaterialTheme.typography.labelLarge,
-				fontWeight = FontWeight.SemiBold,
-				color = accent,
-			)
-			Icon(
-				painter = painterResource(R.drawable.ic_expand_more),
-				contentDescription = null,
-				tint = accent,
-				modifier = Modifier
-					.size(18.dp)
-					.rotate(if (expanded) 180f else 0f),
-			)
-		}
-	}
-}
-
-@Composable
-internal fun ScrobblingSection(
-	items: List<ScrobblingInfo>,
-	imageLoader: ImageLoader,
-	accent: Color,
-	onMore: () -> Unit,
-	onCardClick: (Int) -> Unit,
-) {
-	SectionHeader(title = stringResource(R.string.tracking), action = stringResource(R.string.manage), accent = accent, onAction = onMore)
-	Column(
-		modifier = Modifier
-			.fillMaxWidth()
+			.padding(top = 12.dp)
+			.horizontalScroll(rememberScrollState())
 			.padding(horizontal = SCREEN_PADDING),
-		verticalArrangement = Arrangement.spacedBy(10.dp),
+		horizontalArrangement = Arrangement.spacedBy(8.dp),
 	) {
-		items.forEachIndexed { index, info ->
+		tags.forEach { tag ->
+			val mangaTag = tag.data as? MangaTag
+			val warningColor = if (tag.tint != 0) colorResource(tag.tint) else null
 			Surface(
-				shape = RoundedCornerShape(20.dp),
-				color = MaterialTheme.colorScheme.surfaceContainerHigh,
-				onClick = { onCardClick(index) },
-				modifier = Modifier.fillMaxWidth(),
+				shape = RoundedCornerShape(15.dp),
+				color = (warningColor ?: accent).copy(alpha = 0.16f),
+				onClick = { if (mangaTag != null) onTagClick(mangaTag) },
 			) {
-				Row(
-					modifier = Modifier
-						.padding(16.dp)
-						.height(IntrinsicSize.Min),
-					verticalAlignment = Alignment.Top,
-				) {
-					AsyncImage(
-						model = info.coverUrl,
-						imageLoader = imageLoader,
-						contentDescription = null,
-						contentScale = ContentScale.Crop,
-						modifier = Modifier
-							.size(80.dp, 116.dp)
-							.clip(RoundedCornerShape(14.dp)),
-					)
-					Spacer(Modifier.width(16.dp))
-					Column(
-						modifier = Modifier
-							.weight(1f)
-							.fillMaxHeight(),
-						verticalArrangement = Arrangement.SpaceBetween,
-					) {
-						Column {
-							Row(
-								modifier = Modifier.fillMaxWidth(),
-								horizontalArrangement = Arrangement.SpaceBetween,
-								verticalAlignment = Alignment.CenterVertically,
-							) {
-								Row(
-									verticalAlignment = Alignment.CenterVertically,
-									horizontalArrangement = Arrangement.spacedBy(6.dp),
-								) {
-									Icon(
-										painter = painterResource(
-											if (info.scrobbler == ScrobblerService.SHIKIMORI) {
-												R.drawable.ic_shikimori_raw
-											} else {
-												info.scrobbler.iconResId
-											},
-										),
-										contentDescription = null,
-										tint = Color.Unspecified,
-										modifier = Modifier.size(16.dp),
-									)
-									Text(
-										text = stringResource(info.scrobbler.titleResId),
-										style = MaterialTheme.typography.labelMedium,
-										color = MaterialTheme.colorScheme.onSurfaceVariant,
-									)
-								}
-								info.status?.let { status ->
-									Text(
-										text = stringResource(status.labelResId),
-										style = MaterialTheme.typography.labelMedium,
-										color = accent,
-									)
-								}
-							}
-							Spacer(Modifier.height(10.dp))
-							Text(
-								text = info.title,
-								style = MaterialTheme.typography.bodyLarge,
-								color = MaterialTheme.colorScheme.onSurface,
-								maxLines = 2,
-								overflow = TextOverflow.Ellipsis,
-							)
-						}
-						if (info.chapter > 0 || info.rating > 0f) {
-							Row(
-								modifier = Modifier.fillMaxWidth(),
-								horizontalArrangement = Arrangement.SpaceBetween,
-								verticalAlignment = Alignment.CenterVertically,
-							) {
-								// Whatever the tracker itself reports — the app's own chapter list
-								// may well disagree with it, and this card speaks for the tracker.
-								Text(
-									text = when {
-										info.chapter <= 0 -> ""
-										info.totalChapters > 0 -> stringResource(
-											R.string.chapters_read_d_of_d,
-											info.chapter,
-											info.totalChapters,
-										)
-										else -> stringResource(R.string.chapters_read_d, info.chapter)
-									},
-									style = MaterialTheme.typography.labelLarge,
-									color = MaterialTheme.colorScheme.onSurfaceVariant,
-									maxLines = 1,
-									overflow = TextOverflow.Ellipsis,
-									modifier = Modifier.weight(1f, fill = false),
-								)
-								if (info.rating > 0f) {
-									Row(verticalAlignment = Alignment.CenterVertically) {
-										Icon(
-											painter = painterResource(R.drawable.ic_star_small),
-											contentDescription = null,
-											tint = accent,
-											modifier = Modifier.size(20.dp),
-										)
-										Spacer(Modifier.width(4.dp))
-										Text(
-											text = formatRating(info.rating * MAX_STARS, info.scoreMax, info.scoreDecimals),
-											style = MaterialTheme.typography.titleSmall,
-											color = MaterialTheme.colorScheme.onSurface,
-										)
-									}
-								}
-							}
-						}
-					}
-				}
+				Text(
+					text = tag.title?.toString().orEmpty(),
+					style = MaterialTheme.typography.labelLarge,
+					color = warningColor ?: accent,
+					maxLines = 1,
+					modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+				)
 			}
 		}
 	}
-	Spacer(Modifier.height(8.dp))
 }
 
 @Composable
