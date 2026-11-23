@@ -213,29 +213,18 @@ fun DetailsExpressiveScreen(
 			}
 		}
 
-			// Bottom bar: read button and the chapters pill, pinned to the bottom edge. The content above
-			// reserves room for it, and a fade keeps it legible over whatever scrolls underneath.
+			// Floating action dock: a "N chapters" pill stacked above the read FAB. Both pin to the
+			// bottom-end and stay clear of the navigation bar; the modal chapters sheet draws its own
+			// scrim over them, so they read as "behind" the sheet without any extra hide/show logic.
 			ActionDock(
 				historyInfo = historyInfo,
 				isLoading = isLoading,
 				accent = accentColor,
 				actions = actions,
 				modifier = Modifier
-					.align(Alignment.BottomCenter)
-					.fillMaxWidth()
-					.background(
-						Brush.verticalGradient(
-							0f to Color.Transparent,
-							0.3f to scheme.surface.copy(alpha = 0.92f),
-							1f to scheme.surface,
-						),
-					)
-					.padding(
-						start = SCREEN_PADDING,
-						end = SCREEN_PADDING,
-						top = 24.dp,
-						bottom = bottomContentPadding + 12.dp,
-					),
+					.align(Alignment.BottomEnd)
+					.padding(end = SCREEN_PADDING, bottom = bottomContentPadding + 16.dp)
+					.dockGlow(scheme.surface),
 			)
 
 	}
