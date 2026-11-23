@@ -108,6 +108,7 @@ import org.koitharu.kotatsu.settings.storage.MangaDirectorySelectDialog
 import org.koitharu.kotatsu.settings.storage.directories.MangaDirectoriesActivity
 import org.koitharu.kotatsu.stats.ui.StatsActivity
 import org.koitharu.kotatsu.stats.ui.sheet.MangaStatsSheet
+import org.koitharu.kotatsu.details.notes.MangaNotesActivity
 import org.koitharu.kotatsu.suggestions.ui.SuggestionsActivity
 import org.koitharu.kotatsu.tracker.ui.debug.TrackerDebugActivity
 import org.koitharu.kotatsu.tracker.ui.updates.UpdatesActivity
@@ -575,6 +576,13 @@ class AppRouter private constructor(
         ListSortSheet().withArgs(1) {
             putParcelable(KEY_LIST_SECTION, section)
         }.showDistinct()
+    }
+
+    fun openNotes(manga: Manga) {
+        startActivity(
+            Intent(contextOrNull() ?: return, MangaNotesActivity::class.java)
+                .putExtra(KEY_MANGA, ParcelableManga(manga)),
+        )
     }
 
     fun showStatisticSheet(manga: Manga) {

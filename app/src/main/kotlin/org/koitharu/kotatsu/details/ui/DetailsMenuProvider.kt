@@ -105,6 +105,10 @@ class DetailsMenuProvider(
 				router.openAlternatives(manga)
 			}
 
+			R.id.action_notes -> {
+				router.openNotes(manga)
+			}
+
 			R.id.action_stats -> {
 				router.showStatisticSheet(manga)
 			}

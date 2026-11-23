@@ -41,6 +41,13 @@
 		app:showAsAction="never" />
 
 	<item
+		android:id="@+id/action_notes"
+		android:icon="@drawable/ic_edit"
+		android:orderInCategory="49"
+		android:title="@string/notes"
+		app:showAsAction="never" />
+
+	<item
 		android:id="@+id/action_stats"
 		android:icon="@drawable/ic_timelapse"
 		android:orderInCategory="50"

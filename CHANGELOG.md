@@ -3,26 +3,7 @@
 ## Unreleased
 
 ### New
-- Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
-
-### Improved
-- The app is now called ShotenSauce.
-- The Themed and Mono app icons (and every themed colour) now use the ShotenSauce logo.
-- Secret space no longer adds manga shortcuts to the launcher, and leftovers from earlier are removed.
-- Refreshing a comic also sends your progress to trackers that are behind.
-- The tracker sheet shows your score in the tracker's own scale (like 10/10) next to the stars, and AniList score format changes are picked up on refresh.
-- Tap the score number in the tracker sheet to type an exact score in the tracker's scale.
-- Titles you already favourited from another source get a duplicate icon and that source's logo in the top-left pill of the cover.
-- Frosted glass is removed, along with its switch and strength slider in Appearance.
-- "Download new chapters" moved from Check new chapters to Downloads, and the page, manga and retry limits sit on their own Speed and retries screen.
-- Plainer wording across downloads. Notifications show the state (downloading, waiting, paused, failed) and download settings are grouped into Storage and Network and speed.
-- Synced with DropSauce 1.1.5
-
-### Fixed
-- Restoring a Mihon backup no longer crashes by overwriting settings with the wrong type.
-- Tracker messages in Services show in a dialog instead of a snackbar.
-- Auto-track now finds titles with quotes, backticks and other symbols by also searching a cleaned-up version of the name.
-- "Sync progress from tracking services" no longer shows as an oversized highlighted card in Services.
+- Personal notes on a title, opened from the details menu on their own screen: a Markdown editor with a formatting toolbar (bold, italic, strikethrough, headings, lists, quote, code, link, undo and redo) and a preview
 - Title details show the type (Manga, Manhwa, Manhua, Webtoon...) in an info grid with rating, language and last update, and a card lists every alternative title
 - Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
 
@@ -47,7 +28,6 @@
 - Tracking settings moved to their own "Tracking options" screen with Progress and Actions sections, and Pause stale titles shows its number of days on the same row
 - The tracker sync report is removed, since progress already follows your reading and refreshes
 - Needs review is a full screen list with covers and full titles, grouped by tracker
-- The tracker sync report is removed, since progress already follows your reading and refreshes
 
 ### Removed
 - Google Drive sync, with its settings entry, sign-in step in the welcome screen and Google Play Services dependency

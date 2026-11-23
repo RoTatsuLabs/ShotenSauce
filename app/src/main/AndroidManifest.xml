@@ -678,6 +678,10 @@
 			</intent-filter>
 		</activity-alias>
 		<activity
+			android:name="org.koitharu.kotatsu.details.notes.MangaNotesActivity"
+			android:exported="false"
+			android:windowSoftInputMode="adjustResize" />
+		<activity
 			android:name="org.koitharu.kotatsu.main.ui.welcome.OnboardingActivity"
 			android:exported="false" />
 		<activity

@@ -57,6 +57,9 @@ import org.koitharu.kotatsu.core.db.migrations.Migration37To38
 import org.koitharu.kotatsu.core.db.migrations.Migration38To39
 import org.koitharu.kotatsu.core.db.migrations.Migration39To40
 import org.koitharu.kotatsu.core.db.migrations.Migration40To41
+import org.koitharu.kotatsu.core.db.migrations.Migration41To42
+import org.koitharu.kotatsu.core.db.dao.MangaNotesDao
+import org.koitharu.kotatsu.core.db.entity.MangaNoteEntity
 import org.koitharu.kotatsu.core.db.migrations.Migration2To3
 import org.koitharu.kotatsu.core.db.migrations.Migration3To4
 import org.koitharu.kotatsu.core.db.migrations.Migration4To5
@@ -88,7 +91,7 @@ import org.koitharu.kotatsu.tracker.data.TrackEntity
 import org.koitharu.kotatsu.tracker.data.TrackLogEntity
 import org.koitharu.kotatsu.tracker.data.TracksDao
 
-const val DATABASE_VERSION = 41
+const val DATABASE_VERSION = 42
 
 @Database(
 	entities = [
@@ -96,7 +99,7 @@ const val DATABASE_VERSION = 41
 		FavouriteCategoryEntity::class, FavouriteEntity::class, MangaPrefsEntity::class, TrackEntity::class,
 		TrackLogEntity::class, SuggestionEntity::class, BookmarkEntity::class, ScrobblingEntity::class,
 		MangaSourceEntity::class, StatsEntity::class, LocalMangaIndexEntity::class,
-		SyncRowEntity::class, SyncPrefEntity::class, SyncRemoteEntity::class,
+		SyncRowEntity::class, SyncPrefEntity::class, SyncRemoteEntity::class, MangaNoteEntity::class,
 	],
 	version = DATABASE_VERSION,
 )
@@ -111,6 +114,8 @@ abstract class MangaDatabase : RoomDatabase() {
 	abstract fun getFavouritesDao(): FavouritesDao
 
 	abstract fun getPreferencesDao(): PreferencesDao
+
+	abstract fun getMangaNotesDao(): MangaNotesDao
 
 	abstract fun getFavouriteCategoriesDao(): FavouriteCategoriesDao
 
@@ -176,6 +181,7 @@ fun getDatabaseMigrations(context: Context): Array<Migration> = arrayOf(
 	Migration38To39(),
 	Migration39To40(),
 	Migration40To41(),
+	Migration41To42(),
 )
 
 fun MangaDatabase(context: Context): MangaDatabase = Room

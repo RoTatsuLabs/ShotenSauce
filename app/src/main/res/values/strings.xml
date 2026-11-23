@@ -1555,11 +1555,13 @@
     <string name="time_format_24">24-hour</string>
     <string name="notes">Notes</string>
     <string name="notes_hint">Write a note about this title</string>
-    <string name="notes_markdown_hint">Markdown is supported: **bold**, *italic*, lists, links</string>
     <string name="details_cover_color">Colours from the cover</string>
     <string name="details_cover_color_summary">Tint the title details with a colour taken from the cover</string>
     <string name="backup_job_sending_telegram">Sending backup to Telegram</string>
     <string name="backup_job_busy">A backup or restore is already running</string>
     <string name="details_panorama_cover">Wide covers</string>
     <string name="details_panorama_cover_summary">Show a wide cover in its own shape beside the title instead of cropping it to portrait</string>
+    <string name="notes_preview">Preview</string>
+    <string name="notes_stats">%1$d words · %2$d characters</string>
+    <string name="notes_tool_link">Link</string>
 </resources>
