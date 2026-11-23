@@ -3,9 +3,11 @@ package org.koitharu.kotatsu.bookmarks.ui
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.plus
@@ -32,23 +34,49 @@ class AllBookmarksViewModel @Inject constructor(
 
 	val onActionDone = MutableEventFlow<ReversibleAction>()
 
-	val content: StateFlow<List<ListModel>> = repository.observeBookmarks()
-		.map { list ->
-			if (list.isEmpty()) {
-				listOf(
-					EmptyState(
-						icon = R.drawable.ic_empty_favourites,
-						textPrimary = R.string.no_bookmarks_yet,
-						textSecondary = R.string.no_bookmarks_summary,
-						actionStringRes = 0,
-					),
-				)
-			} else {
-				mapList(list)
-			}
+	/** Colour the list is narrowed to, or null to show every bookmark. */
+	val colorFilter = MutableStateFlow<Int?>(null)
+
+	val content: StateFlow<List<ListModel>> = combine(repository.observeBookmarks(), colorFilter) { all, color ->
+		val list = if (color == null) {
+			all
+		} else {
+			all.mapValues { (_, bookmarks) -> bookmarks.filter { it.color == color } }
+				.filterValues { it.isNotEmpty() }
 		}
+		when {
+			list.isNotEmpty() -> mapList(list)
+			all.isNotEmpty() -> listOf(
+				EmptyState(
+					icon = R.drawable.ic_empty_favourites,
+					textPrimary = R.string.no_bookmarks_with_color,
+					textSecondary = 0,
+					actionStringRes = 0,
+				),
+			)
+
+			else -> listOf(
+				EmptyState(
+					icon = R.drawable.ic_empty_favourites,
+					textPrimary = R.string.no_bookmarks_yet,
+					textSecondary = R.string.no_bookmarks_summary,
+					actionStringRes = 0,
+				),
+			)
+		}
+	}
 		.catch { e -> emit(listOf(e.toErrorState(canRetry = false))) }
 		.stateIn(viewModelScope + Dispatchers.Default, SharingStarted.Eagerly, listOf(LoadingState))
+
+	fun setColorFilter(color: Int?) {
+		colorFilter.value = color
+	}
+
+	fun setColor(ids: Set<Long>, color: Int?) {
+		launchJob(Dispatchers.Default) {
+			repository.setColor(ids, color)
+		}
+	}
 
 	fun removeBookmarks(ids: Set<Long>) {
 		launchJob(Dispatchers.Default) {

@@ -10,6 +10,12 @@
 		app:showAsAction="ifRoom" />
 
 	<item
+		android:id="@+id/action_color"
+		android:icon="@drawable/ic_bookmark_color"
+		android:title="@string/bookmark_color"
+		app:showAsAction="ifRoom" />
+
+	<item
 		android:id="@+id/action_save"
 		android:icon="@drawable/ic_save"
 		android:title="@string/save"

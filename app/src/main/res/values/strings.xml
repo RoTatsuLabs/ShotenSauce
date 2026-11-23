@@ -465,6 +465,11 @@
     <string name="remove_repo">Remove store index</string>
     <string name="no_bookmarks_yet">No bookmarks yet</string>
     <string name="no_bookmarks_summary">You can create bookmark while reading manga</string>
+    <string name="bookmark_color">Bookmark colour</string>
+    <string name="bookmark_color_summary">Colours help you remember why you saved a page</string>
+    <string name="bookmark_color_none">No colour</string>
+    <string name="bookmarks_filter_all">All</string>
+    <string name="no_bookmarks_with_color">No bookmarks with this colour</string>
     <string name="bookmarks_removed">Bookmarks removed</string>
     <string name="no_external_source_installed">No external source found</string>
     <string name="manage_manga_extensions_from_settings_icon">Install manga or novel extensions from the manage option to start reading</string>

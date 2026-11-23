@@ -1,5 +1,6 @@
 package org.koitharu.kotatsu.bookmarks.ui.adapter
 
+import android.content.res.ColorStateList
 import androidx.core.view.isVisible
 import com.hannesdorfmann.adapterdelegates4.dsl.adapterDelegateViewBinding
 import org.koitharu.kotatsu.bookmarks.domain.Bookmark
@@ -17,6 +18,11 @@ fun bookmarkLargeAD(
 	AdapterDelegateClickListenerAdapter(this, clickListener).attach(itemView)
 
 	bind {
+		val color = item.color
+		binding.colorDot.isVisible = color != null
+		if (color != null) {
+			binding.colorDotFill.backgroundTintList = ColorStateList.valueOf(color)
+		}
 		val highlight = item.epubHighlight
 		binding.textViewHighlight.isVisible = highlight != null
 		binding.imageViewThumb.isVisible = highlight == null

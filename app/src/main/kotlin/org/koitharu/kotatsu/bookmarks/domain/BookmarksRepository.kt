@@ -59,6 +59,12 @@ class BookmarksRepository @Inject constructor(
 		db.getBookmarksDao().upsert(listOf(entity))
 	}
 
+	suspend fun setColor(ids: Collection<Long>, color: Int?) {
+		if (ids.isNotEmpty()) {
+			db.getBookmarksDao().setColor(ids, color)
+		}
+	}
+
 	suspend fun removeBookmark(mangaId: Long, chapterId: Long, page: Int) {
 		check(db.getBookmarksDao().delete(mangaId, chapterId, page) != 0) {
 			"Bookmark not found"

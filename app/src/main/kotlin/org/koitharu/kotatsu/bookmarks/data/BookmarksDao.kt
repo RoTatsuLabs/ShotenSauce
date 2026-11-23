@@ -54,6 +54,9 @@ abstract class BookmarksDao {
 	@Query("DELETE FROM bookmarks WHERE manga_id = :mangaId AND chapter_id = :chapterId AND page = :page")
 	abstract suspend fun delete(mangaId: Long, chapterId: Long, page: Int): Int
 
+	@Query("UPDATE bookmarks SET color = :color WHERE page_id IN (:pageIds)")
+	abstract suspend fun setColor(pageIds: Collection<Long>, color: Int?)
+
 	@Upsert
 	abstract suspend fun upsert(bookmarks: Collection<BookmarkEntity>)
 

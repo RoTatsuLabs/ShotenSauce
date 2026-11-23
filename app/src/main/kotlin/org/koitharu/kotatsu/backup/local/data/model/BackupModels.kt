@@ -297,6 +297,7 @@ class BookmarkBackup(
 		@SerialName("image_url") val imageUrl: String,
 		@SerialName("created_at") val createdAt: Long,
 		@SerialName("percent") val percent: Float,
+		@SerialName("color") val color: Int? = null,
 	) {
 
 		constructor(entity: BookmarkEntity) : this(
@@ -308,6 +309,7 @@ class BookmarkBackup(
 			imageUrl = entity.imageUrl,
 			createdAt = entity.createdAt,
 			percent = entity.percent,
+			color = entity.color,
 		)
 
 		fun toEntity() = BookmarkEntity(
@@ -319,6 +321,7 @@ class BookmarkBackup(
 			imageUrl = imageUrl,
 			createdAt = createdAt,
 			percent = percent,
+			color = color,
 		)
 	}
 

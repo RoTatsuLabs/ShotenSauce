@@ -1,6 +1,9 @@
 package org.koitharu.kotatsu.bookmarks.ui
 
 import android.os.Bundle
+import android.text.SpannableString
+import android.text.style.ForegroundColorSpan
+import android.text.style.RelativeSizeSpan
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -16,6 +19,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.util.ext.roundTopCorners
 import org.koitharu.kotatsu.bookmarks.domain.Bookmark
+import org.koitharu.kotatsu.bookmarks.domain.BookmarkColors
 import org.koitharu.kotatsu.bookmarks.ui.adapter.BookmarksAdapter
 import org.koitharu.kotatsu.core.exceptions.resolve.SnackbarErrorObserver
 import org.koitharu.kotatsu.core.nav.ReaderIntent
@@ -24,13 +28,14 @@ import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.ui.BaseFragment
 import org.koitharu.kotatsu.core.ui.list.ListSelectionController
 import org.koitharu.kotatsu.core.ui.list.OnListItemClickListener
+import org.koitharu.kotatsu.core.ui.widgets.ChipsView
 import org.koitharu.kotatsu.core.ui.util.ReversibleActionObserver
 import org.koitharu.kotatsu.core.util.ext.consumeAllSystemBarsInsets
 import org.koitharu.kotatsu.core.util.ext.findAppCompatDelegate
 import org.koitharu.kotatsu.core.util.ext.observe
 import org.koitharu.kotatsu.core.util.ext.observeEvent
 import org.koitharu.kotatsu.core.util.ext.systemBarsInsets
-import org.koitharu.kotatsu.databinding.FragmentListSimpleBinding
+import org.koitharu.kotatsu.databinding.FragmentAllBookmarksBinding
 import org.koitharu.kotatsu.list.ui.GridSpanResolver
 import org.koitharu.kotatsu.list.ui.adapter.ListHeaderClickListener
 import org.koitharu.kotatsu.list.ui.adapter.ListItemType
@@ -43,7 +48,7 @@ import javax.inject.Inject
 
 @AndroidEntryPoint
 class AllBookmarksFragment :
-	BaseFragment<FragmentListSimpleBinding>(),
+	BaseFragment<FragmentAllBookmarksBinding>(),
 	ListStateHolderListener,
 	OnListItemClickListener<Bookmark>,
 	ListSelectionController.Callback,
@@ -59,6 +64,7 @@ class AllBookmarksFragment :
 	private val viewModel by viewModels<AllBookmarksViewModel>()
 	private var bookmarksAdapter: BookmarksAdapter? = null
 	private var selectionController: ListSelectionController? = null
+	private var pendingColorIds: Set<Long> = emptySet()
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
@@ -68,12 +74,12 @@ class AllBookmarksFragment :
 	override fun onCreateViewBinding(
 		inflater: LayoutInflater,
 		container: ViewGroup?,
-	): FragmentListSimpleBinding {
-		return FragmentListSimpleBinding.inflate(inflater, container, false)
+	): FragmentAllBookmarksBinding {
+		return FragmentAllBookmarksBinding.inflate(inflater, container, false)
 	}
 
 	override fun onViewBindingCreated(
-		binding: FragmentListSimpleBinding,
+		binding: FragmentAllBookmarksBinding,
 		savedInstanceState: Bundle?,
 	) {
 		super.onViewBindingCreated(binding, savedInstanceState)
@@ -106,6 +112,17 @@ class AllBookmarksFragment :
 		}
 		viewModel.content.observe(viewLifecycleOwner) {
 			bookmarksAdapter?.setItems(it, spanSizeLookup)
+		}
+		binding.chipsColors.onChipClickListener = ChipsView.OnChipClickListener { _, data ->
+			viewModel.setColorFilter((data as? Int)?.takeIf { it != 0 })
+		}
+		viewModel.colorFilter.observe(viewLifecycleOwner) { selected ->
+			binding.chipsColors.setChips(buildColorChips(selected))
+		}
+		childFragmentManager.setFragmentResultListener(BookmarkColorSheet.REQUEST_KEY, viewLifecycleOwner) { _, result ->
+			val color = result.getInt(BookmarkColorSheet.KEY_COLOR).takeIf { it != BookmarkColorSheet.NO_COLOR }
+			viewModel.setColor(pendingColorIds, color)
+			selectionController?.clear()
 		}
 		viewModel.onError.observeEvent(
 			viewLifecycleOwner,
@@ -186,6 +203,12 @@ class AllBookmarksFragment :
 				true
 			}
 
+			R.id.action_color -> {
+				pendingColorIds = selectionController?.snapshot() ?: return false
+				router.showBookmarkColorSheet()
+				true
+			}
+
 			R.id.action_save -> {
 				viewModel.savePages(pageSaveHelper, selectionController?.snapshot() ?: return false)
 				mode?.finish()
@@ -194,6 +217,27 @@ class AllBookmarksFragment :
 
 			else -> false
 		}
+	}
+
+	private fun buildColorChips(selected: Int?): List<ChipsView.ChipModel> {
+		val chips = ArrayList<ChipsView.ChipModel>(BookmarkColors.ALL.size + 1)
+		chips += ChipsView.ChipModel(
+			titleResId = R.string.bookmarks_filter_all,
+			isChecked = selected == null,
+			data = 0,
+		)
+		for (color in BookmarkColors.ALL) {
+			val dot = SpannableString("\u25CF").apply {
+				setSpan(ForegroundColorSpan(color), 0, length, 0)
+				setSpan(RelativeSizeSpan(1.3f), 0, length, 0)
+			}
+			chips += ChipsView.ChipModel(
+				title = dot,
+				isChecked = selected == color,
+				data = color,
+			)
+		}
+		return chips
 	}
 
 	private inner class SpanSizeLookup : GridLayoutManager.SpanSizeLookup(), Runnable {

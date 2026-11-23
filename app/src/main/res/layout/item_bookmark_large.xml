@@ -32,6 +32,26 @@
 		tools:text="Selected EPUB text appears here as a remembered highlight."
 		tools:visibility="gone" />
 
+	<FrameLayout
+		android:id="@+id/colorDot"
+		android:layout_width="18dp"
+		android:layout_height="18dp"
+		android:layout_gravity="top|end"
+		android:layout_margin="@dimen/card_indicator_offset"
+		android:background="@drawable/bg_bookmark_color_ring"
+		android:visibility="gone"
+		tools:visibility="visible">
+
+		<View
+			android:id="@+id/colorDotFill"
+			android:layout_width="12dp"
+			android:layout_height="12dp"
+			android:layout_gravity="center"
+			android:background="@drawable/bg_bookmark_color_fill"
+			tools:backgroundTint="#F2716B" />
+
+	</FrameLayout>
+
 	<org.koitharu.kotatsu.history.ui.util.ReadingProgressView
 		android:id="@+id/progressView"
 		android:layout_width="wrap_content"
