@@ -25,6 +25,7 @@ import dagger.Reusable
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlin.random.Random
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -88,6 +89,7 @@ import org.koitharu.kotatsu.local.data.input.LocalMangaParser
 import org.koitharu.kotatsu.local.data.output.LocalMangaOutput
 import org.koitharu.kotatsu.local.domain.MangaLock
 import org.koitharu.kotatsu.local.domain.model.LocalManga
+import org.jsoup.HttpStatusException
 import org.koitharu.kotatsu.parsers.exception.TooManyRequestExceptions
 import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaChapter
@@ -355,6 +357,8 @@ class DownloadWorker @AssistedInject constructor(
 		chaptersCount: Int,
 		prefetchedPages: Deferred<List<MangaPage>?>? = null,
 	): Boolean {
+		// Stop before writing a single page when the disk is nearly full, instead of failing halfway through
+		runFailsafe { checkFreeSpace(destination) }
 		val pages = prefetchedPages?.await() ?: runFailsafe {
 			repo.getPages(manga, chapter.value)
 		}
@@ -467,9 +471,13 @@ class DownloadWorker @AssistedInject constructor(
 					e.getRetryDelay()
 				} else {
 					// Smart retry: wait longer after every failed attempt, up to a minute
-					(DOWNLOAD_ERROR_DELAY shl (maxAttempts - countDown).coerceIn(0, 5)).coerceAtMost(MAX_BACKOFF_DELAY)
+					// A little jitter keeps parallel pages from retrying in lockstep
+					(DOWNLOAD_ERROR_DELAY shl (maxAttempts - countDown).coerceIn(0, 5)).coerceAtMost(MAX_BACKOFF_DELAY) +
+						Random.nextLong(0, MAX_RETRY_JITTER)
 				}
-				if (countDown <= 0 || retryDelay < 0 || retryDelay > MAX_RETRY_DELAY) {
+				// A dead or forbidden link will not come back by waiting, so skip the retries for it
+				val isFatalHttp = e is HttpStatusException && e.statusCode in FATAL_HTTP_CODES
+				if (isFatalHttp || countDown <= 0 || retryDelay < 0 || retryDelay > MAX_RETRY_DELAY) {
 					if (e !is IOException) {
 						throw e // not a network error, so waiting won't fix it: fails just this chapter
 					}
@@ -501,6 +509,14 @@ class DownloadWorker @AssistedInject constructor(
 					delay(retryDelay)
 				}
 			}
+		}
+	}
+
+	private fun checkFreeSpace(dir: File) {
+		val free = dir.usableSpace
+		// usableSpace is 0 when the path cannot be queried, which must not block the download
+		if (free in 1 until MIN_FREE_BYTES) {
+			throw IOException("No space left on device")
 		}
 	}
 
@@ -820,6 +836,9 @@ class DownloadWorker @AssistedInject constructor(
 		private const val SPEED_WINDOW = 1_000L
 		private const val DOWNLOAD_ERROR_DELAY = 2_000L
 		private const val MAX_RETRY_DELAY = 7_200_000L // 2 hours
+		private const val MAX_RETRY_JITTER = 500L
+		private const val MIN_FREE_BYTES = 50L * 1024 * 1024
+		private val FATAL_HTTP_CODES = setOf(401, 403, 404, 410)
 		const val TAG = "download"
 	}
 }
