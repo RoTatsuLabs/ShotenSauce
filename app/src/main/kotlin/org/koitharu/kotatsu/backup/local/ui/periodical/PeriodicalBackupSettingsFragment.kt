@@ -253,7 +253,7 @@ private fun PeriodicalBackupScreen(
 						subtitle = stringResource(R.string.backup_telegram_summary),
 						checked = telegramEnabled,
 						onCheckedChange = { telegramEnabled = it },
-						icon = R.drawable.ic_share,
+						icon = R.drawable.ic_telegram,
 						shape = pos.shape,
 					)
 				}
@@ -310,7 +310,7 @@ private fun PeriodicalBackupScreen(
 					ActionSettingsItem(
 						title = stringResource(R.string.backup_telegram_send_now),
 						subtitle = if (telegramSending) stringResource(R.string.creating_backup) else null,
-						icon = R.drawable.ic_upload_file,
+						icon = R.drawable.ic_telegram,
 						shape = pos.shape,
 						enabled = telegramEnabled && telegramReady && !telegramSending,
 						onClick = onSendToTelegram,

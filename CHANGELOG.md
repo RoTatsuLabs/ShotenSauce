@@ -10,7 +10,6 @@
 ### Improved
 - Title details redesigned: cover and title on top with the Favourite button under them, a progress card beside chapters and last update, genres inside the description card, and the Tracking card at the bottom
 - Tracking options: the running "Track untracked favourites" pass has a Cancel button
-- New original icons for Telegram, backup and restore, Mihon import and export, tracking options, cover colour, panorama cover, time format and notes
 - Downloads stop retrying dead or forbidden links, spread retries out with a little randomness and check for free space before starting a chapter
 - Bookmarks can be labelled with a colour and filtered by it
 - Smart categories in Tracking options: bind each tracker status to a category and favourites move there when the status changes
