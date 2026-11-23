@@ -33,12 +33,11 @@ import org.koitharu.kotatsu.core.model.getTitle
 import org.koitharu.kotatsu.core.model.isLocal
 import org.koitharu.kotatsu.core.util.ext.calculateTimeAgo
 import org.koitharu.kotatsu.details.data.MangaDetails
+import org.koitharu.kotatsu.details.ui.model.HistoryInfo
 import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaTag
 import java.time.Instant
 import java.util.Locale
-
-private const val TILES_PER_ROW = 3
 
 private class InfoTile(
 	val label: String,
@@ -49,69 +48,60 @@ private class InfoTile(
 )
 
 /**
- * Facts about the title at a glance: its type, chapter count and when it last got a chapter.
- * A tile is left out when the source has nothing to say for it, and the whole block when none have.
+ * Reading progress as a big card with the chapter count and last update as tiles beside it.
+ * A tile is left out when the source has nothing to say for it.
  */
 @Composable
-internal fun InfoGrid(
-	manga: Manga,
+internal fun InfoBento(
 	details: MangaDetails?,
-	formats: List<FormatTag>,
+	historyInfo: HistoryInfo,
+	isLoading: Boolean,
 	chapterCount: Int,
-	sourceTitle: String?,
 	accent: Color,
-	onFormatClick: (MangaTag) -> Unit,
-	onSourceClick: () -> Unit,
 ) {
 	val context = LocalContext.current
-	val typeLabel = stringResource(R.string.type)
 	val chaptersLabel = stringResource(R.string.chapters)
 	val updatedLabel = stringResource(R.string.updated)
 	val lastChapterDate = details?.allChapters?.maxOfOrNull { it.uploadDate } ?: 0L
-
-	val tiles = remember(manga, formats, chapterCount, lastChapterDate, context, onFormatClick) {
-		buildList {
-			if (formats.isNotEmpty()) {
-				add(
-					InfoTile(
-						label = typeLabel,
-						value = formats.joinToString(" · ") { context.getString(it.format.titleResId) },
-						highlighted = true,
-						onClick = formats.firstNotNullOfOrNull { it.tag }?.let { tag -> { onFormatClick(tag) } },
-					),
-				)
-			}
-			if (chapterCount > 0) {
-				add(InfoTile(label = chaptersLabel, value = chapterCount.toString()))
-			}
-			if (lastChapterDate > 0L) {
-				calculateTimeAgo(Instant.ofEpochMilli(lastChapterDate), showMonths = true)?.let {
-					add(InfoTile(label = updatedLabel, value = it.format(context)))
-				}
-			}
+	val updated = remember(lastChapterDate, context) {
+		if (lastChapterDate > 0L) {
+			calculateTimeAgo(Instant.ofEpochMilli(lastChapterDate), showMonths = true)?.format(context)
+		} else {
+			null
 		}
 	}
-	if (tiles.isEmpty()) return
-
-	Column(
+	Row(
 		modifier = Modifier
 			.fillMaxWidth()
-			.padding(horizontal = SCREEN_PADDING, vertical = 4.dp),
-		verticalArrangement = Arrangement.spacedBy(8.dp),
+			.padding(horizontal = SCREEN_PADDING, vertical = 4.dp)
+			.height(IntrinsicSize.Min),
+		horizontalArrangement = Arrangement.spacedBy(8.dp),
 	) {
-		tiles.chunked(TILES_PER_ROW).forEach { row ->
-			Row(
-				// Tiles of a row share its tallest height, so a wrapped value does not leave a ragged edge
-				modifier = Modifier
-					.fillMaxWidth()
-					.height(IntrinsicSize.Min),
-				horizontalArrangement = Arrangement.spacedBy(8.dp),
+		ProgressBentoCard(
+			historyInfo = historyInfo,
+			isLoading = isLoading,
+			accent = accent,
+			modifier = Modifier.weight(1f).fillMaxHeight(),
+		)
+		if (chapterCount > 0 || updated != null) {
+			Column(
+				modifier = Modifier.weight(1f).fillMaxHeight(),
+				verticalArrangement = Arrangement.spacedBy(8.dp),
 			) {
-				row.forEach { tile ->
-					InfoTileCard(tile = tile, accent = accent, modifier = Modifier.weight(1f).fillMaxHeight())
+				if (chapterCount > 0) {
+					InfoTileCard(
+						tile = InfoTile(label = chaptersLabel, value = chapterCount.toString()),
+						accent = accent,
+						modifier = Modifier.fillMaxWidth().weight(1f),
+					)
 				}
-				// Keep a lone last tile the width of the others instead of stretching across the row
-				repeat(TILES_PER_ROW - row.size) { Spacer(Modifier.weight(1f)) }
+				if (updated != null) {
+					InfoTileCard(
+						tile = InfoTile(label = updatedLabel, value = updated),
+						accent = accent,
+						modifier = Modifier.fillMaxWidth().weight(1f),
+					)
+				}
 			}
 		}
 	}

@@ -99,6 +99,18 @@ import org.koitharu.kotatsu.core.util.FileSize
 import android.os.Build
 import eu.kanade.tachiyomi.util.system.toast
 import org.koitharu.kotatsu.core.util.ext.copyToClipboard
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
+import coil3.ImageLoader
+import coil3.compose.AsyncImage
 import org.koitharu.kotatsu.details.data.MangaDetails
 import org.koitharu.kotatsu.list.ui.model.MangaListModel
 import org.koitharu.kotatsu.parsers.model.Manga
@@ -116,6 +128,7 @@ private const val DESCRIPTION_COLLAPSED_LINES = 5
 @Composable
 internal fun DescriptionCard(
 	description: CharSequence?,
+	footer: (@Composable () -> Unit)? = null,
 ) {
 	val linkColor = MaterialTheme.colorScheme.primary
 	// The appearance setting only decides how a long description *starts*; tapping still toggles it
@@ -244,6 +257,10 @@ internal fun DescriptionCard(
 				)
 			}
 		}
+		if (footer != null) {
+			Spacer(Modifier.height(14.dp))
+			footer()
+		}
 	}
 }
 
@@ -283,17 +300,21 @@ private fun CharSequence.toAnnotatedString(linkColor: Color, linksClickable: Boo
 	}
 }
 
-/** Genres in one swipeable row, right under the action buttons so they are visible without scrolling. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun TagsSection(tags: List<ChipsView.ChipModel>, accent: Color, onTagClick: (MangaTag) -> Unit) {
+internal fun TagsSection(
+	tags: List<ChipsView.ChipModel>,
+	accent: Color,
+	onTagClick: (MangaTag) -> Unit,
+	inCard: Boolean = false,
+) {
 	if (tags.isEmpty()) return
-	Row(
+	FlowRow(
 		modifier = Modifier
 			.fillMaxWidth()
-			.padding(top = 12.dp)
-			.horizontalScroll(rememberScrollState())
-			.padding(horizontal = SCREEN_PADDING),
+			.padding(horizontal = if (inCard) 0.dp else SCREEN_PADDING, vertical = if (inCard) 0.dp else 7.dp),
 		horizontalArrangement = Arrangement.spacedBy(8.dp),
+		verticalArrangement = Arrangement.spacedBy(8.dp),
 	) {
 		tags.forEach { tag ->
 			val mangaTag = tag.data as? MangaTag
@@ -307,12 +328,150 @@ internal fun TagsSection(tags: List<ChipsView.ChipModel>, accent: Color, onTagCl
 					text = tag.title?.toString().orEmpty(),
 					style = MaterialTheme.typography.labelLarge,
 					color = warningColor ?: accent,
-					maxLines = 1,
-					modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+					modifier = Modifier.padding(horizontal = 14.dp, vertical = 9.dp),
 				)
 			}
 		}
 	}
+}
+
+@Composable
+internal fun ScrobblingSection(
+	items: List<ScrobblingInfo>,
+	imageLoader: ImageLoader,
+	accent: Color,
+	onMore: () -> Unit,
+	onCardClick: (Int) -> Unit,
+) {
+	SectionHeader(title = stringResource(R.string.tracking), action = stringResource(R.string.manage), accent = accent, onAction = onMore)
+	Column(
+		modifier = Modifier
+			.fillMaxWidth()
+			.padding(horizontal = SCREEN_PADDING),
+		verticalArrangement = Arrangement.spacedBy(10.dp),
+	) {
+		items.forEachIndexed { index, info ->
+			Surface(
+				shape = RoundedCornerShape(20.dp),
+				color = MaterialTheme.colorScheme.surfaceContainerHigh,
+				onClick = { onCardClick(index) },
+				modifier = Modifier.fillMaxWidth(),
+			) {
+				Row(
+					modifier = Modifier
+						.padding(16.dp)
+						.height(IntrinsicSize.Min),
+					verticalAlignment = Alignment.Top,
+				) {
+					AsyncImage(
+						model = info.coverUrl,
+						imageLoader = imageLoader,
+						contentDescription = null,
+						contentScale = ContentScale.Crop,
+						modifier = Modifier
+							.size(80.dp, 116.dp)
+							.clip(RoundedCornerShape(14.dp)),
+					)
+					Spacer(Modifier.width(16.dp))
+					Column(
+						modifier = Modifier
+							.weight(1f)
+							.fillMaxHeight(),
+						verticalArrangement = Arrangement.SpaceBetween,
+					) {
+						Column {
+							Row(
+								modifier = Modifier.fillMaxWidth(),
+								horizontalArrangement = Arrangement.SpaceBetween,
+								verticalAlignment = Alignment.CenterVertically,
+							) {
+								Row(
+									verticalAlignment = Alignment.CenterVertically,
+									horizontalArrangement = Arrangement.spacedBy(6.dp),
+								) {
+									Icon(
+										painter = painterResource(
+											if (info.scrobbler == ScrobblerService.SHIKIMORI) {
+												R.drawable.ic_shikimori_raw
+											} else {
+												info.scrobbler.iconResId
+											},
+										),
+										contentDescription = null,
+										tint = Color.Unspecified,
+										modifier = Modifier.size(16.dp),
+									)
+									Text(
+										text = stringResource(info.scrobbler.titleResId),
+										style = MaterialTheme.typography.labelMedium,
+										color = MaterialTheme.colorScheme.onSurfaceVariant,
+									)
+								}
+								info.status?.let { status ->
+									Text(
+										text = stringResource(status.labelResId),
+										style = MaterialTheme.typography.labelMedium,
+										color = accent,
+									)
+								}
+							}
+							Spacer(Modifier.height(10.dp))
+							Text(
+								text = info.title,
+								style = MaterialTheme.typography.bodyLarge,
+								color = MaterialTheme.colorScheme.onSurface,
+								maxLines = 2,
+								overflow = TextOverflow.Ellipsis,
+							)
+						}
+						if (info.chapter > 0 || info.rating > 0f) {
+							Row(
+								modifier = Modifier.fillMaxWidth(),
+								horizontalArrangement = Arrangement.SpaceBetween,
+								verticalAlignment = Alignment.CenterVertically,
+							) {
+								// Whatever the tracker itself reports — the app's own chapter list
+								// may well disagree with it, and this card speaks for the tracker.
+								Text(
+									text = when {
+										info.chapter <= 0 -> ""
+										info.totalChapters > 0 -> stringResource(
+											R.string.chapters_read_d_of_d,
+											info.chapter,
+											info.totalChapters,
+										)
+										else -> stringResource(R.string.chapters_read_d, info.chapter)
+									},
+									style = MaterialTheme.typography.labelLarge,
+									color = MaterialTheme.colorScheme.onSurfaceVariant,
+									maxLines = 1,
+									overflow = TextOverflow.Ellipsis,
+									modifier = Modifier.weight(1f, fill = false),
+								)
+								if (info.rating > 0f) {
+									Row(verticalAlignment = Alignment.CenterVertically) {
+										Icon(
+											painter = painterResource(R.drawable.ic_star_small),
+											contentDescription = null,
+											tint = accent,
+											modifier = Modifier.size(20.dp),
+										)
+										Spacer(Modifier.width(4.dp))
+										Text(
+											text = formatRating(info.rating * MAX_STARS, info.scoreMax, info.scoreDecimals),
+											style = MaterialTheme.typography.titleSmall,
+											color = MaterialTheme.colorScheme.onSurface,
+										)
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	Spacer(Modifier.height(8.dp))
 }
 
 @Composable

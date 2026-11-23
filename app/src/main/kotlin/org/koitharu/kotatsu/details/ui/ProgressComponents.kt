@@ -1,7 +1,11 @@
 package org.koitharu.kotatsu.details.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Surface
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,7 +32,7 @@ import org.koitharu.kotatsu.details.ui.model.HistoryInfo
 import org.koitharu.kotatsu.list.domain.ReadingProgress
 
 @Composable
-internal fun ProgressCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: Color) {
+internal fun ProgressBentoCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: Color, modifier: Modifier = Modifier) {
 	val ctx = LocalContext.current
 	val res = ctx.resources
 	val chaptersText = when {
@@ -47,56 +51,56 @@ internal fun ProgressCard(historyInfo: HistoryInfo, isLoading: Boolean, accent: 
 	val showProgress = hasHistory && percent > 0f
 	val displayPercent = if (ReadingProgress.isCompleted(historyInfo.percent)) 100 else (percent * 100f).toInt()
 
-	SectionCard {
-		Row(verticalAlignment = Alignment.CenterVertically) {
-			Icon(
-				painter = painterResource(R.drawable.ic_read),
-				contentDescription = null,
-				tint = accent,
-				modifier = Modifier.size(22.dp),
-			)
-			Spacer(Modifier.width(12.dp))
-			Text(
-				text = chaptersText,
-				style = MaterialTheme.typography.titleSmall,
-				color = MaterialTheme.colorScheme.onSurface,
-				modifier = Modifier.weight(1f),
-			)
-			if (showProgress) {
+	Surface(
+		shape = RoundedCornerShape(20.dp),
+		color = MaterialTheme.colorScheme.surfaceContainerHigh,
+		modifier = modifier,
+	) {
+		Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+			Row(verticalAlignment = Alignment.CenterVertically) {
+				Icon(
+					painter = painterResource(R.drawable.ic_read),
+					contentDescription = null,
+					tint = accent,
+					modifier = Modifier.size(18.dp),
+				)
+				Spacer(Modifier.width(8.dp))
 				Text(
-					text = stringResource(R.string.percent_string_pattern, displayPercent.toString()),
-					style = MaterialTheme.typography.titleMedium,
-					fontWeight = FontWeight.Bold,
-					color = accent,
+					text = chaptersText,
+					style = MaterialTheme.typography.labelMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+					maxLines = 2,
 				)
 			}
-		}
-		if (showProgress) {
-			Spacer(Modifier.height(14.dp))
-			// Progress is animated here; the indicator itself owns the wave, the amplitude
-			// ramp near 0/100%, the gap and the stop dot.
-			val animatedProgress by animateFloatAsState(
-				targetValue = percent,
-				animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-				label = "readingProgress",
-			)
-			LinearWavyProgressIndicator(
-				// Spatial springs overshoot, so clamp — a progress bar must never report >100%.
-				progress = { animatedProgress.coerceIn(0f, 1f) },
-				color = accent,
-				trackColor = accent.copy(alpha = 0.22f),
-				modifier = Modifier.fillMaxWidth(),
-			)
-		}
-		if (timeText != null) {
-			Spacer(Modifier.height(if (showProgress) 8.dp else 6.dp))
-			Text(
-				text = timeText,
-				style = MaterialTheme.typography.labelMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-				textAlign = if (showProgress) TextAlign.End else TextAlign.Start,
-				modifier = Modifier.fillMaxWidth(),
-			)
+			if (showProgress) {
+				Spacer(Modifier.height(6.dp))
+				Text(
+					text = stringResource(R.string.percent_string_pattern, displayPercent.toString()),
+					style = MaterialTheme.typography.headlineLarge,
+					fontWeight = FontWeight.Light,
+					color = accent,
+				)
+				Spacer(Modifier.height(10.dp))
+				val animatedProgress by animateFloatAsState(
+					targetValue = percent,
+					animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+					label = "readingProgress",
+				)
+				LinearWavyProgressIndicator(
+					progress = { animatedProgress.coerceIn(0f, 1f) },
+					color = accent,
+					trackColor = accent.copy(alpha = 0.22f),
+					modifier = Modifier.fillMaxWidth(),
+				)
+			}
+			if (timeText != null) {
+				Spacer(Modifier.height(8.dp))
+				Text(
+					text = timeText,
+					style = MaterialTheme.typography.labelMedium,
+					color = MaterialTheme.colorScheme.onSurfaceVariant,
+				)
+			}
 		}
 	}
 }

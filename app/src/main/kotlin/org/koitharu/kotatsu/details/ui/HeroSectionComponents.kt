@@ -95,6 +95,8 @@ internal fun HeroSection(
 	imageLoader: ImageLoader,
 	coverUrl: String?,
 	coverRefreshes: Int,
+	favouriteLabel: String,
+	isFavourite: Boolean,
 	actions: DetailsExpressiveActions,
 ) {
 	// Width over height of the loaded cover; 0 until it is known. A wide (panorama) cover keeps its shape
@@ -138,6 +140,16 @@ internal fun HeroSection(
 			)
 			Spacer(Modifier.height(20.dp))
 			HeroTexts(centered = true, manga = manga, accent = accent, actions = actions, ratingLabel = nsfwLabel)
+			Spacer(Modifier.height(16.dp))
+			FavouriteButton(
+				label = favouriteLabel,
+				isFavourite = isFavourite,
+				accent = accent,
+				onClick = { actions.onFavoriteClick(manga) },
+				onQuickClick = actions.onQuickFavoriteClick,
+				horizontalPadding = 0.dp,
+				modifier = Modifier.fillMaxWidth(),
+			)
 		}
 	} else {
 		val density = LocalDensity.current
@@ -165,6 +177,16 @@ internal fun HeroSection(
 				)
 				Column {
 					HeroTexts(centered = false, manga = manga, accent = accent, actions = actions, ratingLabel = null)
+					Spacer(Modifier.height(14.dp))
+					FavouriteButton(
+						label = favouriteLabel,
+						isFavourite = isFavourite,
+						accent = accent,
+						onClick = { actions.onFavoriteClick(manga) },
+						onQuickClick = actions.onQuickFavoriteClick,
+						horizontalPadding = 0.dp,
+						modifier = Modifier.fillMaxWidth(),
+					)
 				}
 			},
 		) { measurables, constraints ->
@@ -188,7 +210,7 @@ internal fun HeroSection(
 
 				layout(constraints.maxWidth, coverHeight) {
 					coverPlaceable.placeRelative(0, 0)
-					// Sit the texts on the cover's bottom edge, with the buttons right beneath them
+					// Sit the texts on the cover's bottom edge, with the favourite button right beneath them
 					textPlaceable.placeRelative(compactCoverWidthPx + spacingPx, coverHeight - textPlaceable.height)
 				}
 			}
@@ -339,110 +361,6 @@ internal fun HeroTexts(
 			overflow = TextOverflow.Ellipsis,
 			modifier = Modifier.clickable { actions.onAuthorClick(authors.first()) },
 		)
-	}
-}
-
-/** Favourite and tracker status side by side, right under the cover and title. */
-@Composable
-internal fun HeroActionRow(
-	scrobblings: List<ScrobblingInfo>,
-	accent: Color,
-	favouriteLabel: String,
-	isFavourite: Boolean,
-	onTrackerClick: () -> Unit,
-	onFavouriteClick: () -> Unit,
-	onQuickFavouriteClick: () -> Unit,
-) {
-	Row(
-		modifier = Modifier
-			.fillMaxWidth()
-			.padding(horizontal = SCREEN_PADDING),
-		horizontalArrangement = Arrangement.spacedBy(10.dp),
-		verticalAlignment = Alignment.CenterVertically,
-	) {
-		FavouriteButton(
-			label = favouriteLabel,
-			isFavourite = isFavourite,
-			accent = accent,
-			onClick = onFavouriteClick,
-			onQuickClick = onQuickFavouriteClick,
-			horizontalPadding = 0.dp,
-			modifier = Modifier.weight(1f),
-		)
-		HeroTrackerButton(
-			info = scrobblings.firstOrNull(),
-			accent = accent,
-			onClick = onTrackerClick,
-			modifier = Modifier.weight(1f),
-		)
-	}
-}
-
-@Composable
-private fun HeroTrackerButton(
-	info: ScrobblingInfo?,
-	accent: Color,
-	onClick: () -> Unit,
-	modifier: Modifier,
-) {
-	Surface(
-		onClick = onClick,
-		shape = RoundedCornerShape(20.dp),
-		color = MaterialTheme.colorScheme.surfaceContainerHigh,
-		modifier = modifier.height(52.dp),
-	) {
-		Row(
-			modifier = Modifier
-				.fillMaxSize()
-				.padding(horizontal = 12.dp),
-			verticalAlignment = Alignment.CenterVertically,
-			horizontalArrangement = Arrangement.Center,
-		) {
-			if (info == null) {
-				Icon(
-					painter = painterResource(R.drawable.ic_add),
-					contentDescription = null,
-					tint = accent,
-					modifier = Modifier.size(20.dp),
-				)
-				Spacer(Modifier.width(8.dp))
-				Text(
-					text = stringResource(R.string.hero_track),
-					style = MaterialTheme.typography.titleSmall,
-					fontWeight = FontWeight.SemiBold,
-					color = accent,
-					maxLines = 1,
-				)
-			} else {
-				Icon(
-					painter = painterResource(
-						if (info.scrobbler == ScrobblerService.SHIKIMORI) {
-							R.drawable.ic_shikimori_raw
-						} else {
-							info.scrobbler.iconResId
-						},
-					),
-					contentDescription = null,
-					tint = Color.Unspecified,
-					modifier = Modifier.size(22.dp),
-				)
-				Spacer(Modifier.width(8.dp))
-				val status = info.status?.let { stringResource(it.labelResId) }
-				val progress = if (info.totalChapters > 0) {
-					"${info.chapter}/${info.totalChapters}"
-				} else {
-					info.chapter.toString()
-				}
-				Text(
-					text = listOfNotNull(status, progress).joinToString(" \u00B7 "),
-					style = MaterialTheme.typography.titleSmall,
-					fontWeight = FontWeight.SemiBold,
-					color = accent,
-					maxLines = 1,
-					overflow = TextOverflow.Ellipsis,
-				)
-			}
-		}
 	}
 }
 

@@ -1511,7 +1511,6 @@
     <plurals name="extension_updates_available_message">
         <item quantity="other">%d pembaruan ekstensi siap dipasang</item>
     </plurals>
-    <string name="hero_track">Lacak</string>
     <string name="time_format">Format waktu</string>
     <string name="time_format_12">12 jam</string>
     <string name="time_format_24">24 jam</string>

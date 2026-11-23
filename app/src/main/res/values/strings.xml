@@ -1550,7 +1550,6 @@
         <item quantity="one">%d title has no clear match. Tap to pick one by hand.</item>
         <item quantity="other">%d titles have no clear match. Tap to pick one by hand.</item>
     </plurals>
-    <string name="hero_track">Track</string>
     <string name="time_format">Time format</string>
     <string name="time_format_12">12-hour</string>
     <string name="time_format_24">24-hour</string>

@@ -27,22 +27,17 @@
 - Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
 
 ### Improved
+- Title details redesigned: cover and title on top with the Favourite button under them, a progress card beside chapters and last update, genres inside the description card, and the Tracking card at the bottom
 - Tracking options: the running "Track untracked favourites" pass has a Cancel button
 - Every backup and restore (local, Mihon import and export, scheduled, Telegram, onboarding) now runs in the background with a progress notification, a cancel button and a result notification; progress and cancel also show on the Backup screen, and only one runs at a time
 - Title details: the chapter list button sits left of Continue in the bottom bar
 - Title details: wide (panorama) covers keep their shape beside the title instead of being cropped to portrait; can be turned off in Appearance
-- Title details: the status label above the title is gone, the title sits at the top next to the cover
 - Title details take their accent colour from the cover (Appearance, Colours from the cover)
 - New Time format setting in Appearance: follow the system, or force 12 or 24 hours (reader clock, statistics)
-- Title details: the Tracking card is gone, the tracker status button under the cover opens the same info
-- Title details: genres sit in one swipeable row right under the action buttons
-- Title details info grid shows Type, Chapters and Updated
-- Title details: the top Continue button is replaced by a tracker status button next to Favourite (or "Track" when untracked); Continue stays in the bottom bar
 - Restoring a Mihon backup runs in the background with a progress notification and bar, and keeps going when you leave the screen; exporting to Mihon no longer stops either
 - Tracking untracked favourites shows a progress bar on its screen, a visible notification and a result notification
 - Telegram backups have their own frequency, separate from the device backup
 - Needs review: a summary with the count and what to do, tracker filter chips, readable source names and tidier rows
-- Title details: info tiles show chapters, source and language too (three per row), the status sits above the title, read and favourite sit side by side under it, the read button and chapters count stay pinned to the bottom, and the description and genres have their own headers
 - The app id is now com.rotatsulabs.shotensauce so it installs next to DropSauce; move your library with a backup and restore. The F-Droid build is gone
 - The type of a tracked title also comes from AniList, MyAnimeList and Kitsu (country of origin or format), which is more reliable than a source's genres
 - Chapter volumes from extensions ("Vol.2 Ch.10") are recognised, so the chapter list groups them by volume when every chapter names one

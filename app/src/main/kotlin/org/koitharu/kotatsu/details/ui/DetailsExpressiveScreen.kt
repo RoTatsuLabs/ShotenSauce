@@ -157,44 +157,40 @@ fun DetailsExpressiveScreen(
 				imageLoader = imageLoader,
 				coverUrl = coverUrl,
 				coverRefreshes = coverRefreshes,
+				favouriteLabel = favLabel,
+				isFavourite = isFavourite,
 				actions = actions,
 			)
 
 			Spacer(Modifier.height(18.dp))
-			HeroActionRow(
-				scrobblings = scrobblings,
-				accent = accentColor,
-				favouriteLabel = favLabel,
-				isFavourite = isFavourite,
-				onTrackerClick = if (scrobblings.isEmpty()) {
-					actions.onScrobblingMore
-				} else {
-					{ actions.onScrobblingCardClick(0) }
-				},
-				onFavouriteClick = { actions.onFavoriteClick(manga) },
-				onQuickFavouriteClick = actions.onQuickFavoriteClick,
-			)
-
-			TagsSection(tags = tags, accent = accentColor, onTagClick = actions.onTagClick)
-
-			Spacer(Modifier.height(8.dp))
-			InfoGrid(
-				manga = manga,
+			InfoBento(
 				details = details,
-				formats = remember(manga.tags, scrobblings) {
-					resolveFormats(manga.tags.formatTags(), scrobblings.map { it.type })
-				},
+				historyInfo = historyInfo,
+				isLoading = isLoading,
 				chapterCount = historyInfo.totalChapters.coerceAtLeast(0),
-				sourceTitle = sourceTitle,
 				accent = accentColor,
-				onFormatClick = actions.onTagClick,
-				onSourceClick = { actions.onSourceClick(manga) },
 			)
-			ProgressCard(historyInfo = historyInfo, isLoading = isLoading, accent = accentColor)
 
-			DescriptionCard(description = details.description)
+			DescriptionCard(
+				description = details.description,
+				footer = if (tags.isEmpty()) {
+					null
+				} else {
+					{ TagsSection(tags = tags, accent = accentColor, onTagClick = actions.onTagClick, inCard = true) }
+				},
+			)
 
 			AltTitlesCard(titles = manga.altTitles)
+
+			if (scrobblings.isNotEmpty()) {
+				ScrobblingSection(
+					items = scrobblings,
+					imageLoader = imageLoader,
+					accent = accentColor,
+					onMore = actions.onScrobblingMore,
+					onCardClick = actions.onScrobblingCardClick,
+				)
+			}
 
 			if (related.isNotEmpty()) {
 				RelatedSection(
