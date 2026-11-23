@@ -9,4 +9,10 @@
 		android:title="@string/manage_categories"
 		android:titleCondensed="@string/categories" />
 
+	<item
+		android:id="@+id/action_duplicates"
+		android:icon="@drawable/ic_find_duplicates"
+		android:orderInCategory="49"
+		android:title="@string/library_duplicates" />
+
 </menu>

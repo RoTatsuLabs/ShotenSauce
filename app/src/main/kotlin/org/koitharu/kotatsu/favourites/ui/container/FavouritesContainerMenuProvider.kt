@@ -21,6 +21,10 @@ class FavouritesContainerMenuProvider(
 				router.openFavoriteCategories()
 			}
 
+			R.id.action_duplicates -> {
+				router.openLibraryDuplicates()
+			}
+
 			else -> return false
 		}
 		return true

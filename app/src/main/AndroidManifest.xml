@@ -859,6 +859,9 @@
 			</intent-filter>
 		</activity>
 		<activity
+			android:name="org.koitharu.kotatsu.favourites.ui.duplicates.library.LibraryDuplicatesActivity"
+			android:label="@string/library_duplicates" />
+		<activity
 			android:name="org.koitharu.kotatsu.stats.ui.StatsActivity"
 			android:label="@string/reading_stats" />
 		<activity

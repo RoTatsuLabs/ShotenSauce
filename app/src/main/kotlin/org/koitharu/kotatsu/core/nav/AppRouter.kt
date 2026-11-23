@@ -69,6 +69,7 @@ import org.koitharu.kotatsu.favourites.ui.categories.edit.FavouritesCategoryEdit
 import org.koitharu.kotatsu.favourites.ui.categories.select.DefaultCategoryDialog
 import org.koitharu.kotatsu.favourites.ui.categories.select.FavoriteDialog
 import org.koitharu.kotatsu.favourites.ui.duplicates.DuplicatesSheet
+import org.koitharu.kotatsu.favourites.ui.duplicates.library.LibraryDuplicatesActivity
 import org.koitharu.kotatsu.filter.ui.FilterCoordinator
 import org.koitharu.kotatsu.filter.ui.mihon.MihonFilterSheetFragment
 import org.koitharu.kotatsu.filter.ui.mihon.MihonSortSheet
@@ -299,6 +300,8 @@ class AppRouter private constructor(
     }
 
     fun openFavoriteCategories() = startActivity(FavouriteCategoriesActivity::class.java)
+
+    fun openLibraryDuplicates() = startActivity(LibraryDuplicatesActivity::class.java)
 
     fun openFavoriteCategoryEdit(categoryId: Long) {
         startActivity(

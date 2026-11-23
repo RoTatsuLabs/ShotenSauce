@@ -995,6 +995,15 @@
     <string name="stats_range_year">Last 12 months</string>
     <string name="stats_range_all">All time</string>
     <string name="alternatives">Alternatives</string>
+    <string name="library_duplicates">Find duplicates</string>
+    <string name="library_duplicates_summary">%1$d titles have more than one copy · %2$d copies</string>
+    <string name="library_duplicates_copies">%1$d copies</string>
+    <string name="library_duplicates_chapters">%1$d chapters</string>
+    <string name="library_duplicates_most_chapters">Most chapters</string>
+    <string name="library_duplicates_keep">Keep this</string>
+    <string name="library_duplicates_none">No duplicates found</string>
+    <string name="library_duplicates_none_summary">Every favourite is a different title</string>
+    <string name="duplicates_removed">Other copies removed from favourites</string>
     <string name="duplicates_title">Already in your library</string>
     <string name="duplicates_summary">\"%1$s\" looks like something you already have.</string>
     <string name="duplicates_add_anyway">Add anyway</string>

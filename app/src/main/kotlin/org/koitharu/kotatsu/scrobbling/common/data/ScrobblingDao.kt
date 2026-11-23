@@ -36,6 +36,9 @@ abstract class ScrobblingDao {
 	)
 	abstract suspend fun findLinkedMangaIds(mangaId: Long): LongArray
 
+	@Query("SELECT manga_id AS mangaId, scrobbler, target_id AS targetId FROM scrobblings")
+	abstract suspend fun findAllLinks(): List<ScrobblingLink>
+
 	@Upsert
 	abstract suspend fun upsert(entity: ScrobblingEntity)
 

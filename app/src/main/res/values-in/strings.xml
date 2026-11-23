@@ -1180,6 +1180,15 @@
     <string name="stats_range_3months">13 minggu terakhir</string>
     <string name="stats_range_year">12 bulan terakhir</string>
     <string name="stats_range_all">Sepanjang waktu</string>
+    <string name="library_duplicates">Cari duplikat</string>
+    <string name="library_duplicates_summary">%1$d judul punya lebih dari satu salinan · %2$d salinan</string>
+    <string name="library_duplicates_copies">%1$d salinan</string>
+    <string name="library_duplicates_chapters">%1$d bab</string>
+    <string name="library_duplicates_most_chapters">Bab terbanyak</string>
+    <string name="library_duplicates_keep">Simpan ini</string>
+    <string name="library_duplicates_none">Tidak ada duplikat</string>
+    <string name="library_duplicates_none_summary">Semua favorit adalah judul yang berbeda</string>
+    <string name="duplicates_removed">Salinan lain dihapus dari favorit</string>
     <string name="duplicates_title">Sudah ada di pustaka kamu</string>
     <string name="duplicates_summary">\"%1$s\" sepertinya sudah kamu miliki.</string>
     <string name="duplicates_add_anyway">Tetap tambahkan</string>
