@@ -741,6 +741,11 @@
     <string name="auto_pause_days">%1$d hari</string>
     <string name="smart_reading_status">Status baca pintar</string>
     <string name="smart_reading_status_summary">Memperbarui status tracker saat kamu membaca: Direncanakan, Ditunda, atau Didrop menjadi Dibaca, dan mencapai chapter terakhir menandainya Selesai</string>
+    <string name="smart_categories">Kategori pintar</string>
+    <string name="smart_categories_summary">Saat status judul berubah di tracker, judul itu pindah ke kategori yang kamu ikat ke status tersebut. Kategori tanpa ikatan tidak pernah disentuh</string>
+    <string name="smart_categories_entry_summary">Susun favorit berdasarkan status tracker</string>
+    <string name="smart_categories_bindings">Status ke kategori</string>
+    <string name="smart_categories_unbound">Tidak diikat</string>
     <string name="in_favourites_from">Di favorit · %s</string>
     <string name="favourite_elsewhere_banner">Sudah ada di favoritmu dari %s</string>
     <string name="hide_favourites">Sembunyikan favorit</string>

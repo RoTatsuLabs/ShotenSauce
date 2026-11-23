@@ -1,5 +1,6 @@
 package org.koitharu.kotatsu.core.prefs
 
+import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingStatus
 import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
@@ -1421,6 +1422,18 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		get() = prefs.getBoolean(KEY_AUTO_TRACK_FAVOURITES, false)
 		set(value) = prefs.edit { putBoolean(KEY_AUTO_TRACK_FAVOURITES, value) }
 
+	/** Files a favourite into the category bound to its tracker status whenever that status changes. */
+	var isSmartCategories: Boolean
+		get() = prefs.getBoolean(KEY_SMART_CATEGORIES, false)
+		set(value) = prefs.edit { putBoolean(KEY_SMART_CATEGORIES, value) }
+
+	/** Id of the category bound to [status], or 0 when the status is not bound. */
+	fun getSmartCategory(status: ScrobblingStatus): Long = prefs.getLong(smartCategoryKey(status), 0L)
+
+	fun setSmartCategory(status: ScrobblingStatus, categoryId: Long) = prefs.edit {
+		putLong(smartCategoryKey(status), categoryId)
+	}
+
 	/** Moves a title's tracker status (reading, on hold, completed) on its own as it is read. */
 	var isSmartReadingStatus: Boolean
 		get() = prefs.getBoolean(KEY_SMART_READING_STATUS, true)
@@ -1934,6 +1947,8 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_BACKUP_SECTIONS = "backup_sections"
 		const val KEY_HIDE_FAVOURITES_IN_BROWSE = "hide_favourites_in_browse"
 		const val KEY_AUTO_TRACK_FAVOURITES = "auto_track_favourites"
+		const val KEY_SMART_CATEGORIES = "smart_categories"
+		fun smartCategoryKey(status: ScrobblingStatus) = "smart_category_" + status.name.lowercase()
 		const val KEY_SMART_READING_STATUS = "smart_reading_status"
 		const val KEY_AUTO_PAUSE_STALE = "auto_pause_stale"
 		const val KEY_AUTO_PAUSE_DAYS = "auto_pause_days"

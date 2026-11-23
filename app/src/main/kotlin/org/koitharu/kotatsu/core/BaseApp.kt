@@ -48,6 +48,7 @@ import org.koitharu.kotatsu.scrobbling.discord.data.DiscordRpcManager
 import org.koitharu.kotatsu.secret.SecretSpace
 import org.koitharu.kotatsu.settings.work.WorkScheduleManager
 import org.koitharu.kotatsu.widget.common.WidgetThemeWatcher
+import org.koitharu.kotatsu.scrobbling.smartcategories.SmartCategoriesController
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -77,6 +78,9 @@ open class BaseApp : Application(), Configuration.Provider {
 
 	@Inject
 	lateinit var workScheduleManager: WorkScheduleManager
+
+	@Inject
+	lateinit var smartCategories: SmartCategoriesController
 
 	@Inject
 	lateinit var localMangaIndexProvider: Provider<LocalMangaIndex>
@@ -130,6 +134,7 @@ open class BaseApp : Application(), Configuration.Provider {
 		}
 		if (!SecretSpace.isActive) {
 			workScheduleManager.init()
+			smartCategories.start(processLifecycleScope)
 		}
 		// Swapping the launcher icon closes the app's task, so it only happens once the app is left.
 		ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {

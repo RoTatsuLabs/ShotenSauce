@@ -92,6 +92,13 @@ class TrackingSettingsFragment : BaseComposeSettingsFragment(R.string.tracking_o
 					reviewCount = reviewTotal,
 					onTrackUntracked = ::confirmTrackUntracked,
 					onCancelTrack = { viewLifecycleOwner.lifecycleScope.launch { autoTrackScheduler.stop() } },
+					onOpenSmartCategories = {
+						(activity as? SettingsActivity)?.openFragment(
+							SmartCategoriesSettingsFragment::class.java,
+							null,
+							isFromRoot = false,
+						)
+					},
 					onOpenReview = {
 						(activity as? SettingsActivity)?.openFragment(
 							TrackReviewFragment::class.java,
@@ -190,6 +197,7 @@ private fun TrackingScreen(
 	reviewCount: Int,
 	onTrackUntracked: () -> Unit,
 	onCancelTrack: () -> Unit,
+	onOpenSmartCategories: () -> Unit,
 	onOpenReview: () -> Unit,
 ) {
 	var autoTrack by rememberBooleanPref(AppSettings.KEY_AUTO_TRACK_FAVOURITES, false)
@@ -281,6 +289,15 @@ private fun TrackingScreen(
 		}
 		item {
 			SettingsGroup(title = stringResource(R.string.tracking_section_actions)) {
+				item { pos ->
+					ActionSettingsItem(
+						title = stringResource(R.string.smart_categories),
+						subtitle = stringResource(R.string.smart_categories_entry_summary),
+						icon = R.drawable.ic_smart_category,
+						shape = pos.shape,
+						onClick = onOpenSmartCategories,
+					)
+				}
 				item { pos ->
 					SettingsItem(
 						title = stringResource(R.string.auto_track_untracked),

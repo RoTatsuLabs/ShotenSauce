@@ -810,6 +810,11 @@
     <string name="auto_pause_days">%1$d days</string>
     <string name="smart_reading_status">Smart reading status</string>
     <string name="smart_reading_status_summary">Updates a title\'s tracker status as you read: Planned, On hold or Dropped becomes Reading, and reaching the last chapter marks it Completed</string>
+    <string name="smart_categories">Smart categories</string>
+    <string name="smart_categories_summary">When a title\'s status changes on a tracker, it moves to the category you bind to that status. Categories without a binding are never touched</string>
+    <string name="smart_categories_entry_summary">File favorites by their tracker status</string>
+    <string name="smart_categories_bindings">Status to category</string>
+    <string name="smart_categories_unbound">Not bound</string>
     <string name="auto_track_link_all">Link all to nearest entry</string>
     <string name="in_favourites_from">In favorites · %s</string>
     <string name="source_and_favourite_elsewhere">%1$s · in favorites from %2$s</string>
