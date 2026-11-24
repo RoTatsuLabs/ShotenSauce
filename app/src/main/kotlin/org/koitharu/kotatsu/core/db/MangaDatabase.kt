@@ -186,11 +186,15 @@ fun getDatabaseMigrations(context: Context): Array<Migration> = arrayOf(
 	Migration42To43(),
 )
 
-fun MangaDatabase(context: Context): MangaDatabase = Room
-	.databaseBuilder(context, MangaDatabase::class.java, "kotatsu-db")
-	.addMigrations(*getDatabaseMigrations(context))
-	.addCallback(DatabasePrePopulateCallback(context.resources))
-	.build()
+fun MangaDatabase(context: Context): MangaDatabase {
+	// A damaged file is swapped for the newest healthy snapshot before Room ever opens it
+	DatabaseGuard.verifyAndRecover(context)
+	return Room
+		.databaseBuilder(context, MangaDatabase::class.java, DatabaseGuard.DB_NAME)
+		.addMigrations(*getDatabaseMigrations(context))
+		.addCallback(DatabasePrePopulateCallback(context.resources))
+		.build()
+}
 
 @OptIn(DelicateCoroutinesApi::class)
 fun InvalidationTracker.removeObserverAsync(observer: InvalidationTracker.Observer) {

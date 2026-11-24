@@ -14,6 +14,7 @@
 - Downloads stop retrying dead or forbidden links, spread retries out with a little randomness and check for free space before starting a chapter
 - Bookmarks can be labelled with a colour and filtered by it
 - Smart categories in Tracking options: bind each tracker status to a category and favourites move there when the status changes
+- The library database is checked at start; a damaged one is set aside and replaced by the newest of the last three daily snapshots, with a notification
 - Find duplicates in the Favourites menu lists titles you saved more than once and keeps the copy you choose
 - Every backup and restore (local, Mihon import and export, scheduled, Telegram, onboarding) now runs in the background with a progress notification, a cancel button and a result notification; progress and cancel also show on the Backup screen, and only one runs at a time
 - Title details: the chapter list button sits left of Continue in the bottom bar

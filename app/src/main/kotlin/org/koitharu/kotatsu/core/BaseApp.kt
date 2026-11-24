@@ -49,6 +49,7 @@ import org.koitharu.kotatsu.secret.SecretSpace
 import org.koitharu.kotatsu.settings.work.WorkScheduleManager
 import org.koitharu.kotatsu.widget.common.WidgetThemeWatcher
 import org.koitharu.kotatsu.scrobbling.smartcategories.SmartCategoriesController
+import org.koitharu.kotatsu.core.db.DatabaseGuard
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -131,6 +132,10 @@ open class BaseApp : Application(), Configuration.Provider {
 		processLifecycleScope.launch(Dispatchers.Default) {
 			setupDatabaseObservers()
 			localStorageChanges.collect(localMangaIndexProvider.get())
+		}
+		processLifecycleScope.launch(Dispatchers.IO) {
+			DatabaseGuard.notifyIfRecovered(this@BaseApp)
+			DatabaseGuard.snapshotIfDue(this@BaseApp, database.get())
 		}
 		if (!SecretSpace.isActive) {
 			workScheduleManager.init()

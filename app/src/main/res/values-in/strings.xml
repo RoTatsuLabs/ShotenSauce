@@ -1544,4 +1544,7 @@
     <string name="notes_preview">Pratinjau</string>
     <string name="notes_stats">%1$d kata · %2$d karakter</string>
     <string name="notes_tool_link">Tautan</string>
+    <string name="db_recovered_title">Database pustaka diperbaiki</string>
+    <string name="db_recovered_restored">Database rusak dan sudah dipulihkan dari snapshot %s. Perubahan setelah itu hilang. File yang rusak disimpan.</string>
+    <string name="db_recovered_fresh">Database rusak dan tidak ada snapshot, jadi aplikasi mulai dengan database kosong. File yang rusak disimpan.</string>
 </resources>
