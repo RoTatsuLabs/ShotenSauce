@@ -5,11 +5,8 @@
 </p>
 
 <p align="center">
-  A lightweight, modern comic and novel reader for Android with a beautiful Material 3 Expressive design. Supports Mihon and LNReader extensions.
-</p>
-
-<p align="center">
-  <sub>ShotenSauce is a fork of <a href="https://github.com/HuzaifaKhalid1311/DropSauce">DropSauce</a> by HuzaifaKhalid1311.</sub>
+  A fast, modern manga and novel reader for Android, built with Material 3 Expressive.<br>
+  Works with Mihon and LNReader extensions.
 </p>
 
 <p align="center">
@@ -26,20 +23,32 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/RoTatsuLabs/ShotenSauce/releases/latest"><strong>Download APK</strong></a>
-  |
-  <a href="https://github.com/HuzaifaKhalid1311/DropSauce"><strong>Upstream (DropSauce)</strong></a>
+  <a href="https://github.com/RoTatsuLabs/ShotenSauce/releases/latest"><strong>Download</strong></a>
+  &nbsp;·&nbsp;
+  <a href="CHANGELOG.md"><strong>Changelog</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/HuzaifaKhalid1311/DropSauce"><strong>Upstream</strong></a>
+</p>
+
+<p align="center">
+  <a href="#about">About</a> ·
+  <a href="#features">Features</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#faq">FAQ</a> ·
+  <a href="#project-structure">Structure</a> ·
+  <a href="#credits">Credits</a>
 </p>
 
 ---
 
 ## About
 
-ShotenSauce is a free and open-source comic and novel reader for Android, built to feel quick, clean, and comfortable to use with a lot of features
+ShotenSauce is a free, open-source reader for manga, webtoons and novels on Android. It aims to feel quick and clean while still packing in a lot of features.
 
-ShotenSauce is a personal fork, built for my own use and shared as is. It takes no issues or pull requests, and I give no support, no guarantees, and no promise of updates or fixes.
+It is a personal fork of [DropSauce](https://github.com/HuzaifaKhalid1311/DropSauce), built for my own use and shared as is. It takes no issues or pull requests, and comes with no support, no guarantees and no promise of updates or fixes.
 
-⭐Please give the repo a star if you like the project. It helps more people find it.🌟
+> [!NOTE]
+> This app code is mostly written with AI assistance (Claude), directed and reviewed by me. If you are not comfortable with that, this project may not be for you.
 
 ## Screenshots
 
@@ -47,62 +56,106 @@ ShotenSauce is a personal fork, built for my own use and shared as is. It takes 
   <img src="assets/app-features.png" alt="ShotenSauce features" width="100%" />
 </p>
 
-## Highlights
-- Full novel reading support alongside manga, including offline EPUB file importing.
-- Multi-source extension engine supporting LNReader JS plugins and Tsundoku APK extensions.
-- Lightweight Android-first experience with a modern, polished interface.
-- Rich extension support with library, reading, history, bookmarks, tracking, stats, and settings tools.
-- Google Drive sync, local backup/restore, and in-app updates to keep your setup moving with you.
-- Supports Kotatsu and Mihon backup restoration alongside google drive sync
-- Free and open-source under the GPLv3 license.
+## Features
+
+| | |
+|---|---|
+| 📖 **Reading** | Manga, webtoon and novel reader with configurable behavior, haptics and zoom gestures. Offline EPUB import, and PDF import that turns PDFs into readable CBZ chapters. |
+| 🔌 **Sources** | Native sources, LNReader JS plugins, and Mihon and Tsundoku APK extensions. |
+| 🗂️ **Library** | Favourites with categories, history, bookmarks (with colour labels), reading stats, and a find-duplicates tool. |
+| 📡 **Tracking** | Shikimori, AniList, MyAnimeList, Kitsu and MangaBaka. Auto-track favourites, smart reading status, and bind tracker statuses to categories. |
+| ⬇️ **Downloads** | Queue with filters and drag to reorder, parallel pages, charging-only mode, smart retries, and download-ahead while you read. |
+| 💾 **Backup** | Local backup and restore, scheduled backups, Telegram backups with selectable contents, and Kotatsu and Mihon backup restore. |
+| 🎨 **Look** | Material 3 Expressive details page, colours taken from the cover, custom fonts, and home screen widgets. |
+| 🔒 **Privacy** | Secret space (hidden library, history, bookmarks and downloads behind a PIN or fingerprint), app lock, and blurred sensitive covers. |
 
 <details>
-<summary><strong>ShotenSauce Features</strong></summary>
+<summary><strong>More details</strong></summary>
 
-- Secret space: a hidden library, history, bookmarks and downloads behind a PIN or fingerprint.
-- Download manager: queue, filters, drag to reorder, parallel pages, charging-only, smart retries, per-source speed, and download-ahead while you read.
-- Auto-track favourites: favourites are tracked on every tracker you use, with your reading progress. Unsure matches wait for your review.
-- Tracker import: pull covers, titles, descriptions, genres and more from a tracker into a manga, field by field.
-- Blur sensitive covers: 18+ titles and genres you pick are blurred everywhere. Hold a cover to peek.
-- Custom fonts: import your own .ttf or .otf fonts and use them across the whole app.
-- Telegram and selective backups: send backups to your own Telegram chat and choose what goes in them.
+- **Tracker import:** pull covers, titles, descriptions and genres from a tracker into a title, field by field.
+- **Auto-track:** favourites are tracked on every tracker you use together with your reading progress. Uncertain matches wait for your review.
+- **Smart categories:** when a title's status changes on a tracker, it moves to the category you bound to that status.
+- **Blur sensitive covers:** 18+ titles and genres you pick are blurred everywhere. Hold a cover to peek.
+- **Custom fonts:** import your own `.ttf` or `.otf` fonts and use them across the app.
+- **Backups in the background:** every backup and restore runs with a progress notification and a cancel button.
+- **Updates:** in-app updates, with APKs also published on GitHub Releases.
+
+</details>
+
+The full list of changes is in the [changelog](CHANGELOG.md).
+
+## Install
+
+1. Open the [latest release](https://github.com/RoTatsuLabs/ShotenSauce/releases/latest).
+2. Download the newest `ShotenSauce` APK.
+3. Install it on a device running Android 8.0 or newer.
+4. Add a source or extension repository, then start reading.
+
+Android may ask you to allow installs from your browser or file manager. That is normal for APKs downloaded outside the Play Store.
+
+## FAQ
+
+<details>
+<summary><strong>Does ShotenSauce include manga or novels?</strong></summary>
+
+No. There is no built-in content. Sources come from external libraries, JS plugins or repositories that you add yourself.
 
 </details>
 
 <details>
-<summary><strong>Features</strong></summary>
+<summary><strong>Is it free?</strong></summary>
 
-- Comfortable manga, webtoon and novel reading experience with configurable reader behavior, haptics, and zoom gestures.
-- EPUB novel importing for offline reading.
-- Extensive extension ecosystem supporting native extensions, LNReader JS plugins, and Tsundoku APK extensions.
-- Reverse tracking integration with a redesigned tracking menu.
-- Favorites, history, bookmarks, tracking, stats, and categories to keep your library organized.
-- Google Drive sync for library, history, bookmarks, tracking, stats, settings, and covers.
-- Local backup and restore system for moving or protecting your setup.
-- Material 3 Expressive details page for clear and quick overview
-- New onboarding/welcome flow with sync and restore setup.
-- Android widgets for continue reading, favorites, and reading stats.
-- PDF import support, converting PDFs into readable CBZ chapters.
-- App lock with biometric or device credential support.
-- Downloads for offline reading when a source supports it.
-- In-app updates, with APKs also published through GitHub Releases.
+Yes. ShotenSauce is free and open source under the GPLv3 license.
 
 </details>
 
 <details>
-<summary><strong>Recent improvements</strong></summary>
+<summary><strong>How do updates work?</strong></summary>
 
-- Full novel support with offline EPUB file importing.
-- LNReader JS plugin and Tsundoku APK extension support.
-- Interactive zoom gestures in novel reading mode.
-- Added reverse tracking and refreshed tracking menu design.
-- New popup animations across app flows.
-- Redesigned list options, filter menu, and progress tracking.
-- Minor UI improvements, edge-case crash fixes, and release build cleanups.
+Update from inside the app, or install the latest APK from the Releases page.
 
 </details>
 
-## Star History
+<details>
+<summary><strong>Can I move over from Kotatsu, DropSauce or Mihon?</strong></summary>
+
+Yes. Restore a Kotatsu or Mihon backup from the Backup screen.
+
+</details>
+
+## Project structure
+
+```plaintext
+app/src/main/
+├── kotlin/org/koitharu/kotatsu/
+│   ├── core/          # Database, network, parser, preferences, UI and utilities
+│   ├── main/          # App entry points and main screens
+│   ├── reader/        # Manga and novel reader
+│   ├── details/       # Title details, chapters and metadata
+│   ├── explore/       # Browse and discovery
+│   ├── search/        # Search, with a Manga/Novel toggle
+│   ├── favourites/    # Favourites, categories and duplicates
+│   ├── bookmarks/     # Bookmarks and colour labels
+│   ├── history/       # Reading history and progress
+│   ├── download/      # Offline downloads and queue
+│   ├── extensions/    # Extension browsing, JS plugins, APK extensions
+│   ├── lnreader/      # LNReader JS plugin integration
+│   ├── mihon/         # Mihon and Tsundoku extension integration
+│   ├── backup/        # Backup and restore
+│   ├── scrobbling/    # Tracker services, auto-track and smart categories
+│   ├── tracker/       # New chapter checks
+│   ├── stats/         # Reading statistics
+│   ├── secret/        # Secret space
+│   ├── widget/        # Home screen widgets
+│   └── settings/      # Settings screens
+└── res/
+    ├── drawable*/     # Icons and backgrounds
+    ├── layout*/       # XML layouts
+    ├── values*/       # Strings, colors, themes and translations
+    └── xml/           # Android XML configuration
+```
+
+## Star history
 
 <a href="https://www.star-history.com/?repos=rotatsulabs%2Fshotensauce&type=date&releases=&legend=bottom-right">
  <picture>
@@ -112,76 +165,21 @@ ShotenSauce is a personal fork, built for my own use and shared as is. It takes 
  </picture>
 </a>
 
-## Install
-
-1. Open the [latest GitHub release](https://github.com/RoTatsuLabs/ShotenSauce/releases/latest).
-2. Download the newest `ShotenSauce` APK.
-3. Install it on a compatible Android device.
-4. Add your preferred source or extension repository, then start reading.
-
-Android may ask you to allow installs from your browser or file manager. That is normal for APKs downloaded outside the Play Store.
-
-## FAQ
-
-### Does ShotenSauce include manga or novels?
-> No. ShotenSauce does not include built-in content. Sources are provided through external libraries, JS plugins, or repositories added by users.
-
-### Is ShotenSauce free?
-> Yes. ShotenSauce is free and open source under the GPLv3 license.
-
-### How do updates work?
-> ShotenSauce supports in-app updates, and release APKs are also published on GitHub. You can update from inside the app or install the latest APK from the Releases page.
-
-## Project structure
-
-```plaintext
-app/src/main/
-├── kotlin/org/koitharu/kotatsu/
-│   ├── core/          # Shared database, network, parser, preferences, UI, and utility code
-│   ├── main/          # App entry points, main activity, and app-level screens
-│   ├── reader/        # Manga and novel reader UI and reading behavior
-│   ├── details/       # Manga and novel details, chapters, metadata, and related services
-│   ├── explore/       # Browse and discovery screens
-│   ├── search/        # Search screens and search flows (with Manga/Novel toggle)
-│   ├── favourites/    # Favorites and library-facing flows
-│   ├── history/       # Reading history and progress
-│   ├── download/      # Offline downloads and download queue
-│   ├── extensions/    # Extension browsing, JS plugins, and APK extension management
-│   ├── lnreader/      # LNReader JS plugin integration
-│   ├── mihon/         # Mihon & Tsundoku APK extension integration
-│   ├── backup/        # Local backup and restore
-│   ├── sync/          # Sync data, domain, UI, and workers
-│   ├── tracker/       # Tracking integrations and reverse tracking
-│   ├── widget/        # Android home screen widgets
-│   └── settings/      # Settings screens and preferences
-└── res/
-    ├── drawable*/     # Icons, backgrounds, and app artwork
-    ├── layout*/       # XML screens, widgets, and reusable layouts
-    ├── mipmap*/       # Launcher icons
-    ├── values*/       # Strings, colors, themes, and translations
-    └── xml/           # Android XML configuration
-```
-
 ## Credits
 
-ShotenSauce is a fork of [DropSauce](https://github.com/HuzaifaKhalid1311/DropSauce) by HuzaifaKhalid1311, and exists because of the work already done by the open-source Android manga reader community.
+ShotenSauce is a fork of [DropSauce](https://github.com/HuzaifaKhalid1311/DropSauce) by HuzaifaKhalid1311, and exists because of the open-source Android manga reader community. Thanks to the developers of [Kotatsu](https://github.com/KotatsuApp/Kotatsu), [LNReader](https://github.com/LNReader/lnreader) and [Mihon](https://github.com/mihonapp/mihon) for the ideas, code and source ecosystem behind it.
 
-Special thanks to the original [Kotatsu](https://github.com/KotatsuApp/Kotatsu) developers, [LNReader](https://github.com/LNReader/lnreader) developers, and the [Mihon](https://github.com/mihonapp/mihon) developers/community for the ideas, code, source ecosystem, and long-running maintenance work that helped shape projects like this.
+These projects also inspired features. They were written for this app, and their code is not copied from them.
+
+- [Hyoukan](https://github.com/PineappleTwilight/hyoukan): smart categories bound to tracker status, bookmark colours with a colour filter, Find duplicates, and the database integrity check with rolling snapshots
+- [AniZen](https://github.com/salmanbappi/AniZen): a sturdier downloader, with no retries on dead links, retry jitter and a free-space check
 
 ## License
 
 [![GNU GPLv3 Image](https://www.gnu.org/graphics/gplv3-127x51.png)](http://www.gnu.org/licenses/gpl-3.0.en.html)
 
-<div align="left">
-
-All programs from the ShotenSauce project (a fork of DropSauce) are free, open-source programs under the GPL license. You may copy, distribute, and modify the software as long as you keep track of changes/dates in the source files. Any modifications to the software, including code licensed under the GPL (via a compiler), must also be provided under the GPL license.
-
-</div>
+All programs from the ShotenSauce project (a fork of DropSauce) are free, open-source programs under the GPL license. You may copy, distribute and modify the software as long as you keep track of changes and dates in the source files. Any modification of the software, including code licensed under the GPL (via a compiler), must also be provided under the GPL license.
 
 ## Disclaimer
 
-<div align="left">
-
-The developer(s) of this application do not have any affiliation with the content providers available. If there is any content, it is provided by external libraries added or imported by users; the application itself does not include any built-in content.
-
-</div>
+The developers of this application have no affiliation with the content providers available through it. Any content comes from external libraries added or imported by users; the application itself includes no built-in content.
