@@ -13,6 +13,8 @@ import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.size.Size
 import coil3.toBitmap
+import org.koitharu.kotatsu.core.util.ext.mangaSourceExtra
+import org.koitharu.kotatsu.parsers.model.MangaSource
 import com.google.android.material.color.utilities.Hct
 import com.google.android.material.color.utilities.QuantizerCelebi
 import com.google.android.material.color.utilities.Score
@@ -31,18 +33,21 @@ private const val MIN_CHROMA = 36.0
 internal fun rememberCoverAccent(
 	imageLoader: ImageLoader,
 	coverUrl: String?,
+	/** Extension and plugin covers are only fetched when the request names the source they come from. */
+	source: MangaSource?,
 	coverRefreshes: Int,
 	isDark: Boolean,
 	enabled: Boolean,
 ): Color? {
 	val context = LocalContext.current
-	val accent by produceState<Color?>(initialValue = null, coverUrl, coverRefreshes, isDark, enabled) {
+	val accent by produceState<Color?>(initialValue = null, coverUrl, source, coverRefreshes, isDark, enabled) {
 		value = if (!enabled || coverUrl.isNullOrEmpty()) {
 			null
 		} else {
 			runCatching {
 				val request = ImageRequest.Builder(context)
 					.data(coverUrl)
+					.mangaSourceExtra(source)
 					.size(Size(SAMPLE_SIZE, SAMPLE_SIZE))
 					.allowHardware(false)
 					.build()

@@ -48,7 +48,7 @@ private class InfoTile(
 )
 
 /**
- * Reading progress as a big card with the chapter count and last update as tiles beside it.
+ * Reading progress as a big card with the title type and last update as tiles beside it.
  * A tile is left out when the source has nothing to say for it.
  */
 @Composable
@@ -56,11 +56,11 @@ internal fun InfoBento(
 	details: MangaDetails?,
 	historyInfo: HistoryInfo,
 	isLoading: Boolean,
-	chapterCount: Int,
+	typeLabel: String?,
 	accent: Color,
 ) {
 	val context = LocalContext.current
-	val chaptersLabel = stringResource(R.string.chapters)
+	val typeTitle = stringResource(R.string.type)
 	val updatedLabel = stringResource(R.string.updated)
 	val lastChapterDate = details?.allChapters?.maxOfOrNull { it.uploadDate } ?: 0L
 	val updated = remember(lastChapterDate, context) {
@@ -83,14 +83,14 @@ internal fun InfoBento(
 			accent = accent,
 			modifier = Modifier.weight(1f).fillMaxHeight(),
 		)
-		if (chapterCount > 0 || updated != null) {
+		if (typeLabel != null || updated != null) {
 			Column(
 				modifier = Modifier.weight(1f).fillMaxHeight(),
 				verticalArrangement = Arrangement.spacedBy(8.dp),
 			) {
-				if (chapterCount > 0) {
+				if (typeLabel != null) {
 					InfoTileCard(
-						tile = InfoTile(label = chaptersLabel, value = chapterCount.toString()),
+						tile = InfoTile(label = typeTitle, value = typeLabel),
 						accent = accent,
 						modifier = Modifier.fillMaxWidth().weight(1f),
 					)

@@ -210,8 +210,8 @@ internal fun HeroSection(
 
 				layout(constraints.maxWidth, coverHeight) {
 					coverPlaceable.placeRelative(0, 0)
-					// Sit the texts on the cover's bottom edge, with the favourite button right beneath them
-					textPlaceable.placeRelative(compactCoverWidthPx + spacingPx, coverHeight - textPlaceable.height)
+					// The title starts level with the cover's top edge, with the favourite button right beneath the texts
+					textPlaceable.placeRelative(compactCoverWidthPx + spacingPx, 0)
 				}
 			}
 		}

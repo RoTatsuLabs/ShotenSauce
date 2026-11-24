@@ -3,6 +3,7 @@
 package org.koitharu.kotatsu.details.ui
 
 import org.koitharu.kotatsu.settings.compose.rememberBooleanPref
+import org.koitharu.kotatsu.core.model.isNovelSource
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import androidx.compose.ui.graphics.luminance
 import android.os.Build
@@ -100,12 +101,21 @@ fun DetailsExpressiveScreen(
 	actions: DetailsExpressiveActions,
 ) {
 	val manga = details?.toManga()
+	// A tracker knows where a title was made, so its type outranks the genre a source sent
+	// and a novel source is a novel even when neither of them says so
+	val novelLabel = stringResource(R.string.content_type_novel)
+	val typeLabel = manga?.let {
+		resolveFormats(it.tags.formatTags(), scrobblings.map { info -> info.type }).firstOrNull()
+			?.let { format -> stringResource(format.format.titleResId) }
+			?: novelLabel.takeIf { _ -> it.source.isNovelSource }
+	}
 
 	val scheme = MaterialTheme.colorScheme
 	val coverColorsEnabled by rememberBooleanPref(AppSettings.KEY_DETAILS_COVER_COLOR, true)
 	val coverAccent = rememberCoverAccent(
 		imageLoader = imageLoader,
 		coverUrl = coverUrl,
+		source = manga?.source,
 		coverRefreshes = coverRefreshes,
 		isDark = scheme.surface.luminance() < 0.5f,
 		enabled = coverColorsEnabled,
@@ -167,12 +177,14 @@ fun DetailsExpressiveScreen(
 				details = details,
 				historyInfo = historyInfo,
 				isLoading = isLoading,
-				chapterCount = historyInfo.totalChapters.coerceAtLeast(0),
+				typeLabel = typeLabel,
 				accent = accentColor,
 			)
 
 			DescriptionCard(
 				description = details.description,
+				rating = manga.rating.takeIf { manga.hasRating },
+				accent = accentColor,
 				footer = if (tags.isEmpty()) {
 					null
 				} else {
@@ -187,7 +199,6 @@ fun DetailsExpressiveScreen(
 					items = scrobblings,
 					imageLoader = imageLoader,
 					accent = accentColor,
-					onMore = actions.onScrobblingMore,
 					onCardClick = actions.onScrobblingCardClick,
 				)
 			}

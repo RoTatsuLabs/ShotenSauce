@@ -116,6 +116,8 @@ private const val DESCRIPTION_COLLAPSED_LINES = 5
 @Composable
 internal fun DescriptionCard(
 	description: CharSequence?,
+	rating: Float? = null,
+	accent: Color = MaterialTheme.colorScheme.primary,
 	footer: (@Composable () -> Unit)? = null,
 ) {
 	val linkColor = MaterialTheme.colorScheme.primary
@@ -153,17 +155,30 @@ internal fun DescriptionCard(
 				color = MaterialTheme.colorScheme.onSurface,
 				modifier = Modifier.weight(1f),
 			)
-			if (hasOverflow || expanded && text.isNotEmpty()) {
-				Text(
-					text = stringResource(if (expanded) R.string.collapse else R.string.more),
-					style = MaterialTheme.typography.labelLarge,
-					fontWeight = FontWeight.Medium,
-					color = linkColor,
-					modifier = Modifier.clickable {
-						expanded = !expanded
-						if (expanded) isSettledCollapsed = false
-					},
-				)
+			if (rating != null) {
+				Surface(
+					shape = RoundedCornerShape(50),
+					color = accent.copy(alpha = 0.16f),
+				) {
+					Row(
+						modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+						verticalAlignment = Alignment.CenterVertically,
+						horizontalArrangement = Arrangement.spacedBy(6.dp),
+					) {
+						Icon(
+							painter = painterResource(R.drawable.ic_star_small),
+							contentDescription = null,
+							tint = accent,
+							modifier = Modifier.size(16.dp),
+						)
+						Text(
+							text = String.format(Locale.ROOT, "%.1f", rating * 5f),
+							style = MaterialTheme.typography.labelLarge,
+							fontWeight = FontWeight.Medium,
+							color = accent,
+						)
+					}
+				}
 			}
 		}
 		Spacer(Modifier.height(10.dp))
@@ -328,10 +343,9 @@ internal fun ScrobblingSection(
 	items: List<ScrobblingInfo>,
 	imageLoader: ImageLoader,
 	accent: Color,
-	onMore: () -> Unit,
 	onCardClick: (Int) -> Unit,
 ) {
-	SectionHeader(title = stringResource(R.string.tracking), action = stringResource(R.string.manage), accent = accent, onAction = onMore)
+	Spacer(Modifier.height(8.dp))
 	Column(
 		modifier = Modifier
 			.fillMaxWidth()
