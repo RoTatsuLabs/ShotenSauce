@@ -56,29 +56,22 @@ It is a personal fork of [DropSauce](https://github.com/HuzaifaKhalid1311/DropSa
   <img src="assets/app-features.png" alt="ShotenSauce features" width="100%" />
 </p>
 
-## Features
-
-| | |
-|---|---|
-| 📖 **Reading** | Manga, webtoon and novel reader with configurable behavior, haptics and zoom gestures. Offline EPUB import, and PDF import that turns PDFs into readable CBZ chapters. |
-| 🔌 **Sources** | Native sources, LNReader JS plugins, and Mihon and Tsundoku APK extensions. |
-| 🗂️ **Library** | Favourites with categories, history, bookmarks (with colour labels), reading stats, and a find-duplicates tool. |
-| 📡 **Tracking** | Shikimori, AniList, MyAnimeList, Kitsu and MangaBaka. Auto-track favourites, smart reading status, and bind tracker statuses to categories. |
-| ⬇️ **Downloads** | Queue with filters and drag to reorder, parallel pages, charging-only mode, smart retries, and download-ahead while you read. |
-| 💾 **Backup** | Local backup and restore, scheduled backups, Telegram backups with selectable contents, and Kotatsu and Mihon backup restore. |
-| 🎨 **Look** | Material 3 Expressive details page, colours taken from the cover, custom fonts, and home screen widgets. |
-| 🔒 **Privacy** | Secret space (hidden library, history, bookmarks and downloads behind a PIN or fingerprint), app lock, and blurred sensitive covers. |
-
 <details>
-<summary><strong>More details</strong></summary>
+<summary><strong>Features</strong></summary>
 
-- **Tracker import:** pull covers, titles, descriptions and genres from a tracker into a title, field by field.
-- **Auto-track:** favourites are tracked on every tracker you use together with your reading progress. Uncertain matches wait for your review.
-- **Smart categories:** when a title's status changes on a tracker, it moves to the category you bound to that status.
-- **Blur sensitive covers:** 18+ titles and genres you pick are blurred everywhere. Hold a cover to peek.
-- **Custom fonts:** import your own `.ttf` or `.otf` fonts and use them across the app.
-- **Backups in the background:** every backup and restore runs with a progress notification and a cancel button.
-- **Updates:** in-app updates, with APKs also published on GitHub Releases.
+- Manga, webtoon and novel reader with configurable behavior, haptics and zoom gestures.
+- Offline EPUB import, and PDF import that turns PDFs into readable CBZ chapters.
+- Native sources, LNReader JS plugins, and Mihon and Tsundoku APK extensions.
+- Favourites with categories, history, bookmarks with colour labels, reading stats, and a find-duplicates tool.
+- Tracking with Shikimori, AniList, MyAnimeList, Kitsu and MangaBaka, with tracker import to fill a title's covers, titles, descriptions and genres field by field.
+- Auto-track: favourites are tracked on every tracker you use together with your reading progress. Uncertain matches wait for your review.
+- Smart categories: when a title's status changes on a tracker, it moves to the category you bound to that status.
+- Downloads with filters, drag to reorder, parallel pages, charging-only mode, smart retries, and download-ahead while you read.
+- Local and scheduled backups, Telegram backups with selectable contents, and Kotatsu and Mihon backup restore. Every backup and restore runs with a progress notification and a cancel button.
+- Material 3 Expressive details page with colours taken from the cover, custom fonts (`.ttf` or `.otf`), and home screen widgets.
+- Secret space (hidden library, history, bookmarks and downloads behind a PIN or fingerprint) and app lock.
+- Blurred 18+ titles and genres you pick, everywhere. Hold a cover to peek.
+- In-app updates, with APKs also published on GitHub Releases.
 
 </details>
 
