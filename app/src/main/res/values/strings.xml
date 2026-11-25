@@ -12,6 +12,8 @@
     <string name="list">List</string>
     <string name="detailed_list">Detailed list</string>
     <string name="grid">Grid</string>
+    <string name="chips">Chips</string>
+    <string name="extension_layout">Extension layout</string>
     <string name="cover_only">Cover only</string>
     <string name="list_mode">List mode</string>
     <string name="title_over_cover">Show title over cover</string>
@@ -542,7 +544,7 @@
     <string name="theme_name_expressive">Expressive</string>
     <string name="app_icon">App icon</string>
     <string name="app_icon_summary">The app will close to change the icon</string>
-    <string name="app_icon_follows_theme">Icons follow light and dark mode. Themed also matches your app color</string>
+    <string name="app_icon_follows_theme">Icons follow light and dark mode. Themed also matches your app color, Static never changes</string>
     <string name="retry_failed">Retry failed</string>
     <string name="add_quick_genre">Add a genre</string>
     <string name="dont_suggest">Don\'t suggest</string>
@@ -561,9 +563,9 @@
     <string name="tts_sleep_timer_eoc">End of chapter</string>
     <string name="app_icon_default">Default</string>
     <string name="app_icon_mono">Mono</string>
+    <string name="app_icon_static">Static</string>
     <string name="app_icon_themed">Themed</string>
     <string name="color_theme">Color scheme</string>
-    <string name="show_in_grid_view">Show in grid view</string>
     <string name="extensions_per_row">Extensions per row</string>
     <string name="theme_name_miku">Miku</string>
     <string name="theme_name_lime">Remon</string>
@@ -615,7 +617,7 @@
 	<string name="epub_publisher_style">Use book formatting</string>
 	<string name="epub_bionic_reading">Bionic reading</string>
 	<string name="epub_publisher_style_disabled_note">Turn off book formatting to use the disabled text options.</string>
-	<string name="epub_search_book">Search book</string>
+	<string name="search_text">Search text</string>
 	<string name="export_epub">Export as EPUB</string>
 	<string name="export_epub_done">Exported as EPUB</string>
 	<string name="export_epub_nothing">Download the chapters first — only downloaded chapters can be exported</string>
@@ -641,6 +643,7 @@
 	<string name="epub_color_hex">Hex</string>
 	<string name="epub_search_hint">Enter text to find</string>
 	<string name="epub_no_search_results">No matches found</string>
+	<string name="pdf_search_page">Page %1$d</string>
 	<string name="epub_untitled_chapter">Untitled chapter</string>
 	<string name="epub_text_tab">Text</string>
 	<string name="epub_reading_tab">Reading</string>
@@ -690,6 +693,8 @@
     <string name="invalid_value_message">Invalid value</string>
     <string name="kitsu" translatable="false">Kitsu</string>
     <string name="mangabaka" translatable="false">MangaBaka</string>
+    <string name="comick" translatable="false">Comick</string>
+    <string name="comick_permissions_required">Comick needs both library changes and ongoing sync allowed. Sign in again and tick them on the Comick page</string>
     <string name="email_password_enter_hint">Enter your email and password to continue</string>
     <string name="downloaded">Downloaded</string>
     <string name="images_proxy_title">Images optimization proxy</string>
@@ -1149,6 +1154,7 @@
     <string name="rotation_clockwise">Clockwise</string>
     <string name="rotation_counter_clockwise">Counter-clockwise</string>
     <string name="pin">Pin</string>
+    <string name="pinned">Pinned</string>
     <string name="unpin">Unpin</string>
     <string name="source_pinned">Source pinned</string>
     <string name="source_unpinned">Source unpinned</string>

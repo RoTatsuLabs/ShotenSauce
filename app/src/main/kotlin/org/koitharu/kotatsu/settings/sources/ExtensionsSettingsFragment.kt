@@ -29,6 +29,7 @@ import org.koitharu.kotatsu.secret.SecretSpace
 import org.koitharu.kotatsu.core.nav.router
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.explore.data.MangaSourcesRepository
+import org.koitharu.kotatsu.explore.data.ExtensionLayout
 import org.koitharu.kotatsu.explore.data.SourcesSortOrder
 import org.koitharu.kotatsu.extensions.install.ShizukuExtensionInstaller
 import org.koitharu.kotatsu.parsers.util.names
@@ -196,7 +197,9 @@ private fun ExtensionsScreen(
 	}
 
 	var sortOrder by rememberStringPref(AppSettings.KEY_SOURCES_ORDER, SourcesSortOrder.ALPHABETIC.name)
-	var grid by rememberBooleanPref(AppSettings.KEY_SOURCES_GRID, true)
+	var layoutName by rememberStringPref(AppSettings.KEY_SOURCES_LAYOUT, ExtensionLayout.CHIPS.name)
+	val layouts = remember { ExtensionLayout.entries }
+	val layoutLabels = listOf(stringResource(R.string.chips), stringResource(R.string.grid), stringResource(R.string.list))
 	var gridColumns by rememberIntPref(AppSettings.KEY_SOURCES_GRID_COLUMNS, 4)
 	val gridColumnOptions = remember { listOf(3, 4, 5) }
 	// Most permissive first, the same order the store's filter chip cycles through
@@ -277,12 +280,12 @@ private fun ExtensionsScreen(
 					)
 				}
 				item { pos ->
-					SwitchSettingsItem(
-						title = stringResource(R.string.show_in_grid_view),
-						checked = grid,
-						onCheckedChange = { grid = it },
-						icon = R.drawable.ic_grid,
-						
+					SegmentedSettingsItem(
+						title = stringResource(R.string.extension_layout),
+						labels = layoutLabels,
+						selectedIndex = layouts.indexOfFirst { it.name == layoutName }.coerceAtLeast(0),
+						onSelected = { layoutName = layouts[it].name },
+						icon = R.drawable.ic_extension_layout,
 						shape = pos.shape,
 					)
 				}
@@ -293,7 +296,7 @@ private fun ExtensionsScreen(
 						selectedIndex = gridColumnOptions.indexOf(gridColumns).coerceAtLeast(0),
 						onSelected = { gridColumns = gridColumnOptions[it] },
 						icon = R.drawable.ic_extensions_per_row,
-						enabled = grid,
+						enabled = layoutName == ExtensionLayout.GRID.name,
 						shape = pos.shape,
 					)
 				}

@@ -118,7 +118,6 @@ private enum class SettingsSection(
 	val paletteKey: String,
 	val summaryRes: IntArray,
 	val fragmentClass: Class<out Fragment>?, // null = not in this version of the app
-	val tintIcon: Boolean = true,
 ) {
 	APPEARANCE(
 		R.string.appearance, R.drawable.ic_appearance, "appearance",
@@ -205,7 +204,6 @@ private fun RootSettingsContent(
 							subtitle = subtitle,
 							icon = section.iconRes,
 							iconColors = CategoryPalette.forKey(section.paletteKey),
-							tintIcon = section.tintIcon,
 							shape = pos.shape,
 							onClick = { onSectionClick(section) },
 						)

@@ -36,6 +36,28 @@
 
 ### Removed
 - Google Drive sync, with its settings entry, sign-in step in the welcome screen and Google Play Services dependency
+- Links in PDFs work: web links open in your browser and contents or footnote links jump to the right page
+- Long-press text in a PDF to copy it, look it up in the dictionary or highlight it, and your highlights show up in your bookmarks (Android 15, or 12 to 14 with recent system updates)
+- PDFs with a table of contents now show their real chapters, and you keep your place
+- Search a PDF's text with the search button at the top of the reader, and the matches get marked on the page
+- Track your reading on Comick, sign in from the services settings
+- Fresh new Explore page: bigger shaped buttons, taller suggestions with the title on the cover, a new Manga/Novels switcher, pinned extensions up top, and a button right next to Manage to switch between chips, grid and list
+
+### Improved
+- The chapters popup on a manga's page is a lighter colour and opens right under the cover or progress card
+- PDFs stay sharp however far you zoom in
+- Searching a book's text shows the results right in the search popup, with your words highlighted
+- More sensitive tags like self-harm or nudity get the orange warning colour, and harmless ones like sister or scar don't anymore
+- New Static app icon that never changes colour, for launchers that glitch with the themed ones
+- MangaBaka's icon shows in colour in the trackers menu instead of a blank silhouette
+
+### Fixed
+- Newer Keiyoushi extensions like MangaFire no longer fail on a manga's page with a "must not be called concurrently" error
+- The dictionary popup opens at half the screen instead of jumping to full screen for long meanings
+- Restoring a Mihon backup brings back the right tracker ratings and statuses
+- Opening a chapter no longer occasionally lands on a neighbouring chapter instead of the one you tapped
+- Changing a cover from the full-screen cover view shows the new one right away
+- Other small bug fixes
 
 ## 1.1.5 (2026-11-20)
 

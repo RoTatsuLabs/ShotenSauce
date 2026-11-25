@@ -39,6 +39,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
@@ -142,6 +143,7 @@ fun ScrobblingInfoContent(
 		SheetSection(title = stringResource(R.string.status)) {
 			StatusGrid(
 				current = info.status,
+				supported = info.supportedStatuses,
 				onSelect = onStatusChange,
 				modifier = Modifier.padding(horizontal = SheetContentPadding),
 			)
@@ -322,6 +324,7 @@ private fun HeroRow(
 @Composable
 private fun StatusGrid(
 	current: ScrobblingStatus?,
+	supported: Set<ScrobblingStatus>,
 	onSelect: (ScrobblingStatus) -> Unit,
 	modifier: Modifier = Modifier,
 ) {
@@ -333,6 +336,7 @@ private fun StatusGrid(
 	) {
 		ScrobblingStatus.entries.forEach { status ->
 			val isSelected = status == current
+			val isEnabled = status in supported
 			val background by animateColorAsState(
 				targetValue = if (isSelected) {
 					MaterialTheme.colorScheme.primary
@@ -352,9 +356,11 @@ private fun StatusGrid(
 			Column(
 				modifier = Modifier
 					.weight(1f)
+					// The tracker has no such status (no rereading on MAL, Kitsu or Comick)
+					.alpha(if (isEnabled) 1f else 0.38f)
 					.clip(RoundedCornerShape(20.dp))
 					.background(background)
-					.clickable { onSelect(status) }
+					.clickable(enabled = isEnabled) { onSelect(status) }
 					.padding(vertical = 12.dp, horizontal = 6.dp),
 				horizontalAlignment = Alignment.CenterHorizontally,
 				verticalArrangement = Arrangement.Center,

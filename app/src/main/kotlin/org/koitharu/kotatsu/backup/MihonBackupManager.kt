@@ -49,6 +49,8 @@ import org.koitharu.kotatsu.mihon.model.mihonChapterId
 import org.koitharu.kotatsu.mihon.model.mihonMangaId
 import org.koitharu.kotatsu.parsers.util.longHashCode
 import org.koitharu.kotatsu.scrobbling.common.data.ScrobblingEntity
+import org.koitharu.kotatsu.scrobbling.common.domain.Scrobbler
+import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingStatus
 import org.koitharu.kotatsu.settings.sources.catalog.ExtensionStoreRecord
 import org.koitharu.kotatsu.settings.sources.catalog.ExtensionStoreRegistry
 import org.koitharu.kotatsu.settings.sources.catalog.normalizeExtensionStoreUrl
@@ -68,6 +70,7 @@ class MihonBackupManager @Inject constructor(
     private val mihonExtensionManager: MihonExtensionManager,
     private val mihonExtensionLoader: MihonExtensionLoader,
     private val extensionStoreRegistry: ExtensionStoreRegistry,
+    private val scrobblers: Set<@JvmSuppressWildcards Scrobbler>,
 ) {
 
   private val _restoreProgress = MutableStateFlow<Progress?>(null)
@@ -454,17 +457,21 @@ class MihonBackupManager @Inject constructor(
                         ?: tracking.mediaIdInt.toLong().takeIf { it > 0 }
                         ?: return@mapNotNull null
                     val remoteEntryId = tracking.libraryId.toInt().takeIf { it > 0 }
-                        ?: targetId.toInt().takeIf { it > 0 }
+                        // Comick's 48-bit title numbers often truncate to a negative Int, still a valid local id
+                        ?: targetId.toInt().takeIf { it != 0 }
                         ?: return@mapNotNull null
                     ScrobblingEntity(
                         scrobbler = scrobblerId,
                         id = remoteEntryId,
                         mangaId = mangaId,
                         targetId = targetId,
-                        status = decodeTrackingStatus(tracking.status),
+                        status = decodeTrackingStatus(tracking.syncId, tracking.status)?.let { status ->
+                            scrobblers.find { it.scrobblerService.id == scrobblerId }?.remoteStatus(status)
+                        },
                         chapter = tracking.lastChapterRead.toInt().coerceAtLeast(0),
                         comment = null,
-                        rating = tracking.score,
+                        // the app keeps ratings as 0..1, Mihon keeps each tracker's own scale
+                        rating = (tracking.score / mihonScoreMax(tracking.syncId)).coerceIn(0f, 1f),
                     )
                 }
             } else {
@@ -632,19 +639,27 @@ class MihonBackupManager @Inject constructor(
     3 -> 4 // Kitsu
     4 -> 1 // Shikimori
     11 -> 5 // MangaBaka
+    12 -> 6 // Comick (same HID-to-number encoding as Mihon)
     else -> null
   }
 
-  private fun decodeTrackingStatus(status: Int): String? {
-    return when (status) {
-      1 -> "planned"
-      2 -> "reading"
-      3 -> "completed"
-      4 -> "on_hold"
-      5 -> "dropped"
-      6 -> "re_reading"
-      else -> null
-    }
+  /** Mihon stores scores on each tracker's own scale (AniList and MangaBaka out of 100, Kitsu out of 20). */
+  private fun mihonScoreMax(syncId: Int): Float = when (syncId) {
+    2, 11 -> 100f // AniList, MangaBaka
+    3 -> 20f // Kitsu
+    else -> 10f // MyAnimeList, Shikimori, Comick
+  }
+
+  /** Mihon's status numbers are per tracker: MyAnimeList skips 5, MangaBaka adds 7 "considering". */
+  private fun decodeTrackingStatus(syncId: Int, status: Int): ScrobblingStatus? = when (status) {
+    1 -> ScrobblingStatus.READING
+    2 -> ScrobblingStatus.COMPLETED
+    3 -> ScrobblingStatus.ON_HOLD
+    4 -> ScrobblingStatus.DROPPED
+    5 -> if (syncId == 1) null else ScrobblingStatus.PLANNED
+    6 -> if (syncId == 1) ScrobblingStatus.PLANNED else ScrobblingStatus.RE_READING
+    7 -> if (syncId == 1) ScrobblingStatus.RE_READING else ScrobblingStatus.PLANNED
+    else -> null
   }
 
   private fun computeHistoryPercent(

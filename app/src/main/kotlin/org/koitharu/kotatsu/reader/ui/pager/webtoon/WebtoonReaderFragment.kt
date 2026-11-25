@@ -157,6 +157,7 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 						(findViewHolderForAdapterPosition(position) as? WebtoonHolder)
 							?.restoreScroll(pendingState.scroll)
 					}
+					awaitLayout()
 				}
 				viewModel.onCurrentPageChanged(position, position)
 			} else {

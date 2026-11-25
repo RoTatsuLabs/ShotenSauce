@@ -40,6 +40,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -110,6 +112,7 @@ internal fun HeroSection(
 		else -> null
 	}
 	if (centered) {
+		val sheetGap = with(LocalDensity.current) { 12.dp.toPx() }
 		Column(
 			modifier = Modifier
 				.fillMaxWidth()
@@ -122,7 +125,7 @@ internal fun HeroSection(
 				coverUrl = coverUrl,
 				coverRefreshes = coverRefreshes,
 				imageLoader = imageLoader,
-				modifier = if (isLandscape) {
+				modifier = (if (isLandscape) {
 					Modifier
 						.fillMaxWidth()
 						.widthIn(max = COVER_HEIGHT * coverRatio.coerceAtMost(LANDSCAPE_MAX_RATIO))
@@ -131,6 +134,9 @@ internal fun HeroSection(
 					Modifier
 						.width(COVER_WIDTH)
 						.height(COVER_HEIGHT)
+				}).onGloballyPositioned {
+					// the chapters popup opens just under the cover, clear of its shadow
+					actions.onChaptersSheetAnchorMoved(it.positionOnScreen().y + it.size.height + sheetGap)
 				},
 				corner = 24.dp,
 				nsfwLabel = null,

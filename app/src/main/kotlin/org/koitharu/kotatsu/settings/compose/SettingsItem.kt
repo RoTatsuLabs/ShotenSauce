@@ -185,7 +185,6 @@ fun SettingsItem(
 						iconRes = icon,
 						colors = iconColors,
 						enabled = enabled,
-						tintIcon = tintIcon,
 					)
 				} else {
 					SettingsIconPlain(
@@ -335,24 +334,21 @@ private fun SettingsIconBubble(
 	@DrawableRes iconRes: Int,
 	colors: CategoryIconColors,
 	enabled: Boolean,
-	tintIcon: Boolean = true,
 ) {
 	val containerAlpha = if (enabled) 1f else 0.4f
 	val contentAlpha = if (enabled) 1f else 0.5f
-	// A multicolor logo (e.g. the Google "G") must not be tinted; show it on a white bubble.
-	val containerColor = if (tintIcon) colors.container.copy(alpha = containerAlpha) else Color.White
 	Box(
 		modifier = Modifier
 			.size(44.dp)
 			.clip(CircleShape)
-			.background(containerColor),
+			.background(colors.container.copy(alpha = containerAlpha)),
 		contentAlignment = Alignment.Center,
 	) {
 		androidx.compose.foundation.Image(
 			painter = rememberAnyDrawablePainter(iconRes),
 			contentDescription = null,
-			modifier = Modifier.size(if (tintIcon) 22.dp else 24.dp),
-			colorFilter = if (tintIcon) ColorFilter.tint(colors.onContainer.copy(alpha = contentAlpha)) else null,
+			modifier = Modifier.size(22.dp),
+			colorFilter = ColorFilter.tint(colors.onContainer.copy(alpha = contentAlpha)),
 		)
 	}
 }

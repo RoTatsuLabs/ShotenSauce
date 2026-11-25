@@ -20,7 +20,6 @@ import android.text.Layout
 import android.text.NoCopySpan
 import android.text.Spannable
 import android.text.SpannableString
-import android.text.SpannableStringBuilder
 import android.text.Spanned
 import android.text.SpannedString
 import android.text.StaticLayout
@@ -54,15 +53,6 @@ import android.widget.FrameLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.AppCompatTextView
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import androidx.core.graphics.withClip
 import androidx.core.graphics.withTranslation
@@ -78,8 +68,6 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import coil3.ImageLoader
 import coil3.request.ImageRequest
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialog
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -87,14 +75,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonArray
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
-import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.jsoup.Jsoup
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.bookmarks.domain.Bookmark
@@ -114,12 +95,7 @@ import org.koitharu.kotatsu.lnreader.model.absoluteUrl
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.ui.AppFont
 import org.koitharu.kotatsu.core.prefs.observeAsFlow
-import org.koitharu.kotatsu.core.ui.dialog.DialogCornerAction
-import org.koitharu.kotatsu.core.ui.dialog.ExpressiveDialogCard
-import org.koitharu.kotatsu.core.ui.dialog.ExpressiveOptionGroupItem
-import org.koitharu.kotatsu.core.ui.dialog.showComposeDialog
 import org.koitharu.kotatsu.core.ui.dialog.showConfirmDialog
-import org.koitharu.kotatsu.core.ui.dialog.showTextInputDialog
 import org.koitharu.kotatsu.core.util.ext.getDisplayIcon
 import org.koitharu.kotatsu.core.util.ext.getDisplayMessage
 import org.koitharu.kotatsu.core.util.ext.getDrawableOrThrow
@@ -132,10 +108,11 @@ import org.koitharu.kotatsu.core.util.ext.isZipUri
 import org.koitharu.kotatsu.local.data.input.EpubParser
 import org.koitharu.kotatsu.databinding.FragmentReaderEpubBinding
 import org.koitharu.kotatsu.databinding.ItemErrorStateBinding
-import org.koitharu.kotatsu.databinding.SheetEpubDictionaryBinding
 import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaChapter
 import org.koitharu.kotatsu.parsers.util.ifZero
+import org.koitharu.kotatsu.reader.ui.BookSearch
+import org.koitharu.kotatsu.reader.ui.DictionarySheet
 import org.koitharu.kotatsu.reader.ui.ReaderState
 import org.koitharu.kotatsu.reader.ui.tts.ReaderTts
 import org.koitharu.kotatsu.reader.ui.pager.BaseReaderAdapter
@@ -1150,7 +1127,7 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 			val selection = selectedText(textView) ?: return false
 			return when (item.itemId) {
 				ACTION_DICTIONARY -> {
-					showDictionary(selection.text)
+					DictionarySheet.show(requireContext(), viewLifecycleOwner.lifecycleScope, httpClient, selection.text)
 					mode?.finish()
 					true
 				}
@@ -1179,7 +1156,7 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 		private fun updateSelectionActions(menu: Menu): Boolean {
 			val selection = selectedText(textView)
 			val highlight = selection?.let(::selectedHighlight)
-			menu.findItem(ACTION_DICTIONARY)?.isVisible = selection?.text?.matches(WORD_PATTERN) == true
+			menu.findItem(ACTION_DICTIONARY)?.isVisible = selection?.text?.let(DictionarySheet::isWord) == true
 			menu.findItem(ACTION_HIGHLIGHT)?.isVisible = selection != null && highlight == null
 			menu.findItem(ACTION_REMOVE_HIGHLIGHT)?.isVisible = highlight != null
 			return true
@@ -1358,89 +1335,6 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 		}
 	}
 
-	private fun showDictionary(word: String) {
-		val binding = SheetEpubDictionaryBinding.inflate(layoutInflater)
-		val dialog = BottomSheetDialog(requireContext())
-		dialog.behavior.skipCollapsed = true
-		dialog.behavior.state = BottomSheetBehavior.STATE_EXPANDED
-		binding.textViewWord.text = word
-		binding.buttonClose.setOnClickListener { dialog.dismiss() }
-		dialog.setContentView(binding.root)
-		dialog.show()
-		viewLifecycleOwner.lifecycleScope.launch {
-			val result = runCatching {
-				withContext(Dispatchers.IO) { loadDictionary(word) }
-			}
-			if (!dialog.isShowing) return@launch
-			binding.progressBar.isVisible = false
-			binding.scrollViewContent.isVisible = true
-			val entry = result.getOrNull()
-			binding.textViewContent.text = when {
-				result.isFailure -> getString(R.string.dictionary_error)
-				entry == null -> getString(R.string.dictionary_not_found)
-				else -> formatDictionaryEntry(entry)
-			}
-			binding.textViewPhonetic.text = entry?.phonetic.orEmpty()
-			binding.textViewPhonetic.isVisible = !entry?.phonetic.isNullOrBlank()
-			binding.textViewSource.isVisible = entry != null
-		}
-	}
-
-	private fun loadDictionary(word: String): DictionaryEntry? {
-		val url = DICTIONARY_URL.toHttpUrl().newBuilder().addPathSegment(word).build()
-		val request = Request.Builder().url(url).build()
-		val body = httpClient.newCall(request).execute().use { response ->
-			if (response.code == 404) return null
-			check(response.isSuccessful) { "Dictionary request failed: ${response.code}" }
-			response.body.string()
-		}
-		return parseDictionaryEntry(body)
-	}
-
-	private fun parseDictionaryEntry(body: String): DictionaryEntry? {
-		val entry = Json.parseToJsonElement(body).jsonArray.firstOrNull()?.jsonObject ?: return null
-		val meanings = entry["meanings"]?.jsonArray.orEmpty().mapNotNull { meaningElement ->
-			val meaning = meaningElement.jsonObject
-			val definitions = meaning["definitions"]?.jsonArray.orEmpty().mapNotNull { definitionElement ->
-				val definition = definitionElement.jsonObject
-				val text = definition["definition"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
-				DictionaryDefinition(text, definition["example"]?.jsonPrimitive?.contentOrNull)
-			}.take(MAX_DEFINITIONS_PER_MEANING)
-			if (definitions.isEmpty()) return@mapNotNull null
-			DictionaryMeaning(
-				partOfSpeech = meaning["partOfSpeech"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-				definitions = definitions,
-				synonyms = meaning["synonyms"]?.jsonArray.orEmpty()
-					.mapNotNull { it.jsonPrimitive.contentOrNull }.take(MAX_SYNONYMS),
-			)
-		}.take(MAX_MEANINGS)
-		if (meanings.isEmpty()) return null
-		return DictionaryEntry(
-			phonetic = entry["phonetic"]?.jsonPrimitive?.contentOrNull.orEmpty(),
-			meanings = meanings,
-		)
-	}
-
-	private fun formatDictionaryEntry(entry: DictionaryEntry): CharSequence {
-		val text = SpannableStringBuilder()
-		entry.meanings.forEachIndexed { meaningIndex, meaning ->
-			if (meaningIndex > 0) text.append("\n\n")
-			val headingStart = text.length
-			text.append(meaning.partOfSpeech.ifBlank { getString(R.string.dictionary) })
-			text.setSpan(StyleSpan(Typeface.BOLD), headingStart, text.length, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
-			meaning.definitions.forEachIndexed { index, definition ->
-				text.append("\n${index + 1}. ${definition.text}")
-				definition.example?.takeIf(String::isNotBlank)?.let {
-					text.append("\n   ${getString(R.string.dictionary_example)}: “$it”")
-				}
-			}
-			if (meaning.synonyms.isNotEmpty()) {
-				text.append("\n${getString(R.string.dictionary_synonyms)}: ${meaning.synonyms.joinToString()}")
-			}
-		}
-		return text
-	}
-
 	private fun currentLocator(): Locator {
 		// mid-restore the views are not at the target position yet; trust the target instead
 		// so idle/pause saves and scheduled reflows never capture a transient page 0
@@ -1582,105 +1476,47 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 	}
 
 	fun showBookSearch() {
-		showTextInputDialog(
+		var locators: List<Locator> = emptyList()
+		BookSearch.show(
 			context = requireContext(),
-			icon = R.drawable.ic_search,
-			title = getString(R.string.epub_search_book),
-			hint = getString(R.string.epub_search_hint),
-		) { searchBook(it.trim()) }
+			search = { query ->
+				val found = searchBook(query)
+				locators = found.map { it.first }
+				found.map { it.second }
+			},
+			onPick = { _, index -> locators.getOrNull(index)?.let(::goTo) },
+		)
 	}
 
 	/**
 	 * Remote sources search only what is already loaded: fetching every chapter of a 2000-chapter web
 	 * novel to grep it would hammer the site and take minutes.
 	 */
-	private fun searchBook(query: String) {
-		if (query.isEmpty() || chapters.isEmpty()) return
+	private suspend fun searchBook(query: String): List<Pair<Locator, BookSearch.Result>> {
+		if (chapters.isEmpty()) return emptyList()
 		val isRemote = (chapterContent as? HybridContentSource)?.hasRemote == true
-		Toast.makeText(requireContext(), R.string.loading_, Toast.LENGTH_SHORT).show()
-		viewLifecycleOwner.lifecycleScope.launch {
-			val results = withContext(Dispatchers.IO) {
-				if (!isRemote) ensureChaptersLoaded(chapters.indices)
-				buildList {
-					for ((index, chapter) in chapters.withIndex()) {
-						if (size >= MAX_SEARCH_RESULTS) break
-						val offsets = ArrayList<Int>()
-						var searchFrom = 0
-						while (offsets.size < MAX_HITS_PER_CHAPTER) {
-							val match = chapter.text.indexOf(query, startIndex = searchFrom, ignoreCase = true)
-							if (match < 0) break
-							offsets.add(match)
-							searchFrom = (match + query.length).coerceAtLeast(match + 1)
-						}
-						for ((hitIndex, match) in offsets.withIndex()) {
-							if (size >= MAX_SEARCH_RESULTS) break
-							val start = (match - 45).coerceAtLeast(0)
-							val end = (match + query.length + 70).coerceAtMost(chapter.text.length)
-							val snippet = chapter.text.substring(start, end).replace(Regex("\\s+"), " ").trim()
-							add(
-								SearchResult(
-									chapter = index,
-									title = chapter.title,
-									snippet = snippet,
-									offset = match,
-									matchIndex = hitIndex + 1,
-									chapterMatches = offsets.size,
-								),
-							)
-						}
-					}
-				}
-			}
-			if (results.isEmpty()) {
-				Toast.makeText(requireContext(), R.string.epub_no_search_results, Toast.LENGTH_SHORT).show()
-				return@launch
-			}
-			showSearchResults(results)
-		}
-	}
-
-	private fun showSearchResults(results: List<SearchResult>) {
 		val untitled = getString(R.string.epub_untitled_chapter)
-		showComposeDialog(requireContext()) { dismiss ->
-			val colors = MaterialTheme.colorScheme
-			ExpressiveDialogCard(
-				icon = painterResource(R.drawable.ic_search),
-				title = stringResource(R.string.search_results_count, results.size),
-				cornerAction = DialogCornerAction(
-					icon = painterResource(R.drawable.ic_close),
-					label = stringResource(android.R.string.cancel),
-					onClick = dismiss,
-				),
-			) {
-				results.forEachIndexed { index, result ->
-					ExpressiveOptionGroupItem(
-						index = index,
-						count = results.size,
-						onClick = {
-							dismiss()
-							goTo(Locator(result.chapter, result.offset))
-						},
-					) {
-						Column(modifier = Modifier.padding(vertical = 6.dp)) {
-							val baseTitle = result.title.ifEmpty { untitled }
-							val header = if (result.chapterMatches > 1) {
-								"$baseTitle (${result.matchIndex}/${result.chapterMatches})"
-							} else {
-								baseTitle
-							}
-							Text(
-								text = header,
-								style = MaterialTheme.typography.bodyLarge,
-								color = colors.onSurface,
-							)
-							Text(
-								text = result.snippet,
-								style = MaterialTheme.typography.bodyMedium,
-								color = colors.onSurfaceVariant,
-								maxLines = 2,
-								overflow = TextOverflow.Ellipsis,
-							)
-						}
+		return withContext(Dispatchers.IO) {
+			if (!isRemote) ensureChaptersLoaded(chapters.indices)
+			buildList {
+				for ((index, chapter) in chapters.withIndex()) {
+					if (size >= BookSearch.MAX_RESULTS) break
+					val offsets = ArrayList<Int>()
+					var searchFrom = 0
+					while (offsets.size < MAX_HITS_PER_CHAPTER) {
+						val match = chapter.text.indexOf(query, startIndex = searchFrom, ignoreCase = true)
+						if (match < 0) break
+						offsets.add(match)
+						searchFrom = (match + query.length).coerceAtLeast(match + 1)
+					}
+					val title = chapter.title.ifEmpty { untitled }
+					for ((hitIndex, match) in offsets.withIndex()) {
+						if (size >= BookSearch.MAX_RESULTS) break
+						val result = BookSearch.Result(
+							title = if (offsets.size > 1) "$title (${hitIndex + 1}/${offsets.size})" else title,
+							snippet = BookSearch.snippet(chapter.text, match, query.length),
+						)
+						add(Locator(index, match) to result)
 					}
 				}
 			}
@@ -2189,24 +2025,9 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 
 	private data class PreparedBook(val chapters: List<NativeChapter>, val content: ChapterContent)
 	private data class NativePage(val chapter: Int, val start: Int, val end: Int)
-	private data class SearchResult(
-		val chapter: Int,
-		val title: String,
-		val snippet: String,
-		val offset: Int,
-		val matchIndex: Int = 1,
-		val chapterMatches: Int = 1,
-	)
 	private data class Locator(val chapter: Int, val offset: Int)
 	private data class TextLocation(val chapter: Int, val baseOffset: Int)
 	private data class SelectedText(val chapter: Int, val start: Int, val end: Int, val text: String)
-	private data class DictionaryEntry(val phonetic: String, val meanings: List<DictionaryMeaning>)
-	private data class DictionaryMeaning(
-		val partOfSpeech: String,
-		val definitions: List<DictionaryDefinition>,
-		val synonyms: List<String>,
-	)
-	private data class DictionaryDefinition(val text: String, val example: String?)
 	private fun Locator.clamped(): Locator {
 		if (chapters.isEmpty()) return Locator(0, 0)
 		val c = chapter.coerceIn(chapters.indices)
@@ -2217,7 +2038,6 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 		private const val EPUB_MODE_SCROLL = "scroll"
 		private const val EPUB_THEME_CUSTOM = "custom"
 		private const val EPUB_FONT_CUSTOM = "custom"
-		private const val MAX_SEARCH_RESULTS = 100
 		private const val MAX_HITS_PER_CHAPTER = 25
 		private const val PROGRESS_INTERVAL_MS = 50L
 		private const val LOAD_RETRY_DELAY_MS = 3000L
@@ -2239,11 +2059,8 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 		private const val ACTION_HIGHLIGHT = 0x455002
 		private const val ACTION_REMOVE_HIGHLIGHT = 0x455003
 		private const val HIGHLIGHT_ALPHA = 0x66
-		private const val DEFAULT_HIGHLIGHT_COLOR = 0x66FFD54F
-		private const val DICTIONARY_URL = "https://api.dictionaryapi.dev/api/v2/entries/en"
-		private const val MAX_MEANINGS = 4
-		private const val MAX_DEFINITIONS_PER_MEANING = 3
-		private const val MAX_SYNONYMS = 8
+		/** The highlight colour of the default themes, also used on PDF pages. */
+		const val DEFAULT_HIGHLIGHT_COLOR = 0x66FFD54F
 
 		/** Runs of letters/digits containing at least one letter - text-vide's word pattern. */
 		private val BIONIC_WORD = Regex("[\\p{L}\\p{Nd}]*\\p{L}[\\p{L}\\p{Nd}]*")
@@ -2254,7 +2071,6 @@ class EpubReaderFragment : BaseReaderFragment<FragmentReaderEpubBinding>() {
 				"\u1100-\u11FF\uAC00-\uD7AF\u0E00-\u0EFF\u1780-\u17FF]",
 		)
 
-		private val WORD_PATTERN = Regex("[\\p{L}\\p{M}]+(?:['’\\-][\\p{L}\\p{M}]+)*")
 		private val EMPTY_CHAPTER_TEXT = SpannedString("\u2014")
 	}
 }

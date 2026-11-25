@@ -204,7 +204,10 @@ abstract class BasePagerReaderFragment : BaseReaderFragment<FragmentReaderPagerB
 			if (position != -1) {
 				mihonScroller?.finish()
 				val adapterPosition = requireAdapter().toAdapterPosition(position)
-				requireViewBinding().pager.setCurrentItem(adapterPosition, false)
+				with(requireViewBinding().pager) {
+					setCurrentItem(adapterPosition, false)
+					awaitLayout()
+				}
 				notifyPageChanged(adapterPosition)
 			} else {
 				Snackbar.make(requireView(), R.string.not_found_404, Snackbar.LENGTH_SHORT)

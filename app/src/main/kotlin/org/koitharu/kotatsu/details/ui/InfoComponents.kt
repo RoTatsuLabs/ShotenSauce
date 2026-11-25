@@ -58,6 +58,7 @@ internal fun InfoBento(
 	isLoading: Boolean,
 	typeLabel: String?,
 	accent: Color,
+	modifier: Modifier = Modifier,
 ) {
 	val context = LocalContext.current
 	val typeTitle = stringResource(R.string.type)
@@ -71,7 +72,7 @@ internal fun InfoBento(
 		}
 	}
 	Row(
-		modifier = Modifier
+		modifier = modifier
 			.fillMaxWidth()
 			.padding(horizontal = SCREEN_PADDING, vertical = 4.dp)
 			.height(IntrinsicSize.Min),
