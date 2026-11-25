@@ -192,6 +192,7 @@ class ComickRepository @Inject constructor(
 		status: String?,
 		comment: String?,
 		setStartDate: Boolean, // Comick has no reading dates
+		setFinishDate: Boolean,
 	) {
 		val current = requireEntity(mangaId)
 		val body = JSONObject()

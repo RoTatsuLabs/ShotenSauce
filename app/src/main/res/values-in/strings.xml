@@ -1040,7 +1040,7 @@
     <string name="epub_publisher_style">Pakai format buku</string>
     <string name="epub_bionic_reading">Bionic reading</string>
     <string name="epub_publisher_style_disabled_note">Matikan format buku untuk memakai opsi teks yang dinonaktifkan.</string>
-    <string name="epub_search_book">Cari di buku</string>
+    <string name="search_text">Cari teks</string>
     <string name="export_epub">Ekspor sebagai EPUB</string>
     <string name="export_epub_done">Diekspor sebagai EPUB</string>
     <string name="export_epub_nothing">Unduh chapter-nya dulu, hanya chapter yang sudah diunduh yang bisa diekspor</string>
