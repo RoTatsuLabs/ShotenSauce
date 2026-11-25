@@ -25,7 +25,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.os.bundleOf
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
 import androidx.fragment.app.setFragmentResult
@@ -66,7 +65,7 @@ class BookmarkColorSheet : BaseAdaptiveSheet<SheetSortOrderBinding>() {
 	}
 
 	private fun choose(color: Int?) {
-		setFragmentResult(REQUEST_KEY, bundleOf(KEY_COLOR to (color ?: NO_COLOR)))
+		setFragmentResult(REQUEST_KEY, Bundle().apply { putInt(KEY_COLOR, color ?: NO_COLOR) })
 		dismiss()
 	}
 

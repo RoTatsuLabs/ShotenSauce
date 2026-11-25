@@ -285,7 +285,7 @@ private fun PageList(
 		if (page == Page.ACTIVE) {
 			item(key = "speed") { SpeedStrip(items) }
 		}
-		if (hasStorage && storage != null) {
+		if (hasStorage) {
 			item(key = "storage") { StorageMeter(storage, callbacks.onDeleteStored) }
 		}
 		sections.forEach { (bucket, part) ->
