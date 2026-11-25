@@ -167,6 +167,7 @@ fun DetailsExpressiveScreen(
 				centered = centered,
 				manga = manga,
 				details = details,
+				sourceTitle = sourceTitle,
 				accent = accentColor,
 				imageLoader = imageLoader,
 				coverUrl = coverUrl,

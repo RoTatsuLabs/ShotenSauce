@@ -93,6 +93,7 @@ internal fun HeroSection(
 	centered: Boolean,
 	manga: Manga,
 	details: MangaDetails?,
+	sourceTitle: String?,
 	accent: Color,
 	imageLoader: ImageLoader,
 	coverUrl: String?,
@@ -146,6 +147,16 @@ internal fun HeroSection(
 			)
 			Spacer(Modifier.height(20.dp))
 			HeroTexts(centered = true, manga = manga, accent = accent, actions = actions, ratingLabel = nsfwLabel)
+			Spacer(Modifier.height(12.dp))
+			StatPills(
+				centered = true,
+				showContentRating = false,
+				manga = manga,
+				sourceTitle = sourceTitle,
+				accent = accent,
+				imageLoader = imageLoader,
+				onSourceClick = { actions.onSourceClick(manga) },
+			)
 			Spacer(Modifier.height(16.dp))
 			FavouriteButton(
 				label = favouriteLabel,
@@ -183,6 +194,16 @@ internal fun HeroSection(
 				)
 				Column {
 					HeroTexts(centered = false, manga = manga, accent = accent, actions = actions, ratingLabel = null)
+					Spacer(Modifier.height(10.dp))
+					StatPills(
+						centered = false,
+						showContentRating = false,
+						manga = manga,
+						sourceTitle = sourceTitle,
+						accent = accent,
+						imageLoader = imageLoader,
+						onSourceClick = { actions.onSourceClick(manga) },
+					)
 					Spacer(Modifier.height(14.dp))
 					FavouriteButton(
 						label = favouriteLabel,
@@ -366,6 +387,161 @@ internal fun HeroTexts(
 			maxLines = 2,
 			overflow = TextOverflow.Ellipsis,
 			modifier = Modifier.clickable { actions.onAuthorClick(authors.first()) },
+		)
+	}
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+internal fun StatPills(
+	centered: Boolean,
+	showContentRating: Boolean,
+	manga: Manga,
+	sourceTitle: String?,
+	accent: Color,
+	imageLoader: ImageLoader,
+	onSourceClick: () -> Unit,
+) {
+	val ctx = LocalContext.current
+	FlowRow(
+		modifier = Modifier.fillMaxWidth(),
+		horizontalArrangement = if (centered) {
+			Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+		} else {
+			Arrangement.spacedBy(8.dp)
+		},
+		verticalArrangement = Arrangement.spacedBy(8.dp),
+	) {
+		val hasContentRating = showContentRating && (manga.contentRating == ContentRating.SUGGESTIVE || manga.contentRating == ContentRating.ADULT)
+		if (hasContentRating || manga.state != null || !manga.isLocal) {
+			Row(
+				modifier = Modifier.fillMaxWidth(),
+				horizontalArrangement = if (centered) {
+					Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+				} else {
+					Arrangement.spacedBy(8.dp)
+				},
+				verticalAlignment = Alignment.CenterVertically,
+			) {
+				if (hasContentRating) {
+					when (manga.contentRating) {
+						ContentRating.SUGGESTIVE -> Pill(text = "16+", accent = accent)
+						ContentRating.ADULT -> Pill(text = "18+", accent = accent)
+					}
+				}
+				manga.state?.let { state ->
+					Pill(text = stringResource(state.titleResId), accent = accent)
+				}
+				if (!manga.isLocal) {
+					val srcText = sourceTitle?.takeUnless { it.isBlank() } ?: manga.source.getTitle(ctx)
+					val faviconRequest = remember(manga.source) {
+						ImageRequest.Builder(ctx)
+							.data(manga.source.faviconUri())
+							.mangaSourceExtra(manga.source)
+							.crossfade(true)
+							.build()
+					}
+					SourcePill(
+						text = srcText,
+						faviconRequest = faviconRequest,
+						imageLoader = imageLoader,
+						autoResize = !centered,
+						onClick = onSourceClick,
+						modifier = if (centered) Modifier else Modifier.weight(1f, fill = false),
+					)
+				}
+			}
+		}
+	}
+}
+
+@Composable
+internal fun SourcePill(
+	text: String,
+	faviconRequest: ImageRequest,
+	imageLoader: ImageLoader,
+	autoResize: Boolean,
+	onClick: () -> Unit,
+	modifier: Modifier = Modifier,
+) {
+	Surface(
+		shape = RoundedCornerShape(50),
+		color = MaterialTheme.colorScheme.surfaceContainerHigh,
+		modifier = modifier.clickable(onClick = onClick),
+	) {
+		Row(
+			modifier = Modifier.padding(horizontal = 13.dp, vertical = 8.dp),
+			verticalAlignment = Alignment.CenterVertically,
+			horizontalArrangement = Arrangement.spacedBy(6.dp),
+		) {
+			AsyncImage(
+				model = faviconRequest,
+				imageLoader = imageLoader,
+				contentDescription = null,
+				error = painterResource(R.drawable.ic_manga_source),
+				fallback = painterResource(R.drawable.ic_manga_source),
+				modifier = Modifier
+					.size(16.dp)
+					.clip(RoundedCornerShape(4.dp)),
+			)
+			val labelStyle = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium)
+			val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+			if (autoResize) {
+				AutoResizeText(
+					text = text,
+					color = contentColor,
+					baseStyle = labelStyle,
+					minTextSize = 9.sp,
+					modifier = Modifier.weight(1f, fill = false),
+				)
+			} else {
+				Text(
+					text = text,
+					style = labelStyle,
+					color = contentColor,
+					maxLines = 1,
+					overflow = TextOverflow.Ellipsis,
+				)
+			}
+		}
+	}
+}
+
+@Composable
+internal fun AutoResizeText(
+	text: String,
+	color: Color,
+	baseStyle: TextStyle,
+	minTextSize: TextUnit,
+	modifier: Modifier = Modifier,
+) {
+	val measurer = rememberTextMeasurer()
+	val density = LocalDensity.current
+	BoxWithConstraints(modifier) {
+		val maxWidthPx = with(density) { maxWidth.toPx() }
+		val fontSize = remember(text, maxWidthPx, baseStyle) {
+			var size = baseStyle.fontSize
+			if (maxWidthPx > 0f && size.isSp) {
+				while (size.value > minTextSize.value) {
+					val width = measurer.measure(
+						text = text,
+						style = baseStyle.copy(fontSize = size),
+						maxLines = 1,
+						softWrap = false,
+					).size.width
+					if (width <= maxWidthPx) break
+					size = (size.value - 1f).sp
+				}
+			}
+			size
+		}
+		Text(
+			text = text,
+			color = color,
+			style = baseStyle.copy(fontSize = fontSize),
+			maxLines = 1,
+			softWrap = false,
+			overflow = TextOverflow.Ellipsis,
 		)
 	}
 }
