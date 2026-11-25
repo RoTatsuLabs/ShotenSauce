@@ -37,7 +37,6 @@ import org.koitharu.kotatsu.core.ui.util.ActivityRecreationHandle
 import javax.inject.Inject
 import org.koitharu.kotatsu.parsers.util.names
 import org.koitharu.kotatsu.settings.reader.ReaderBarSettingsFragment
-import org.koitharu.kotatsu.settings.compose.ActionSettingsItem
 import org.koitharu.kotatsu.settings.compose.CategoryPalette
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
@@ -363,7 +362,7 @@ private fun ReaderScreen(
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.reader_actions),
 						subtitle = stringResource(R.string.reader_actions_summary),
 						icon = R.drawable.ic_tap_reorder,

@@ -43,7 +43,7 @@ import org.koitharu.kotatsu.scrobbling.autotrack.AutoTrackStore
 import org.koitharu.kotatsu.scrobbling.autotrack.AutoTrackWorker
 import org.koitharu.kotatsu.scrobbling.autotrack.AutoTracker
 import org.koitharu.kotatsu.settings.SettingsActivity
-import org.koitharu.kotatsu.settings.compose.ActionSettingsItem
+import org.koitharu.kotatsu.settings.compose.NavigationSettingsItem
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
 import org.koitharu.kotatsu.settings.compose.ChoiceDialog
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
@@ -290,7 +290,7 @@ private fun TrackingScreen(
 		item {
 			SettingsGroup(title = stringResource(R.string.tracking_section_actions)) {
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.smart_categories),
 						subtitle = stringResource(R.string.smart_categories_entry_summary),
 						icon = R.drawable.ic_smart_category,
@@ -331,7 +331,7 @@ private fun TrackingScreen(
 				}
 				if (reviewCount > 0) {
 					item { pos ->
-						ActionSettingsItem(
+						NavigationSettingsItem(
 							title = stringResource(R.string.auto_track_review),
 							subtitle = pluralStringResource(R.plurals.auto_track_review_count, reviewCount, reviewCount),
 							icon = R.drawable.ic_search,

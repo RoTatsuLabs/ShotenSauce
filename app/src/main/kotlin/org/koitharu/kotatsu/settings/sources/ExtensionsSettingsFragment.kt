@@ -34,7 +34,7 @@ import org.koitharu.kotatsu.explore.data.SourcesSortOrder
 import org.koitharu.kotatsu.extensions.install.ShizukuExtensionInstaller
 import org.koitharu.kotatsu.parsers.util.names
 import org.koitharu.kotatsu.settings.SettingsActivity
-import org.koitharu.kotatsu.settings.compose.ActionSettingsItem
+import org.koitharu.kotatsu.settings.compose.NavigationSettingsItem
 import org.koitharu.kotatsu.settings.compose.CategoryPalette
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
@@ -221,7 +221,7 @@ private fun ExtensionsScreen(
 		item {
 			SettingsGroup(title = "Catalog") {
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.manage_extensions),
 						subtitle = stringResource(R.string.manage_extensions_summary),
 						icon = R.drawable.ic_download,
@@ -231,7 +231,7 @@ private fun ExtensionsScreen(
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.extension_stores),
 						subtitle = stringResource(R.string.manage_stores_summary),
 						icon = R.drawable.ic_storefront,
@@ -240,7 +240,7 @@ private fun ExtensionsScreen(
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.migrate_extensions),
 						subtitle = stringResource(R.string.migrate_extensions_summary),
 						icon = R.drawable.ic_migrate,

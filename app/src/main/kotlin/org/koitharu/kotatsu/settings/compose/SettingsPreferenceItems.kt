@@ -251,6 +251,7 @@ fun NavigationSettingsItem(
 	iconColors: CategoryIconColors? = null,
 	shape: Shape = MaterialTheme.shapes.medium,
 	enabled: Boolean = true,
+	below: @Composable (() -> Unit)? = null,
 ) {
 	SettingsItem(
 		title = title,
@@ -262,6 +263,7 @@ fun NavigationSettingsItem(
 		enabled = enabled,
 		onClick = onClick,
 		trailing = { NavigationChevron(enabled) },
+		below = below,
 	)
 }
 

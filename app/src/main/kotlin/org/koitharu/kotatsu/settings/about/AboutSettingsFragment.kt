@@ -72,6 +72,7 @@ import org.koitharu.kotatsu.core.nav.router
 import org.koitharu.kotatsu.core.util.ext.observeEvent
 import org.koitharu.kotatsu.settings.SettingsActivity
 import org.koitharu.kotatsu.settings.about.changelog.ChangelogFragment
+import org.koitharu.kotatsu.settings.compose.NavigationSettingsItem
 import org.koitharu.kotatsu.settings.compose.ActionSettingsItem
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
@@ -213,7 +214,7 @@ private fun AboutScreen(
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.changelog),
 						subtitle = stringResource(R.string.changelog_summary),
 						icon = R.drawable.ic_history,
@@ -283,7 +284,7 @@ private fun AboutScreen(
 					)
 				}
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.developer_testing_tools),
 						subtitle = stringResource(R.string.developer_testing_tools_summary),
 						icon = R.drawable.ic_timer_run,

@@ -33,6 +33,7 @@ import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.model.FavouriteCategory
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.util.ext.powerManager
+import org.koitharu.kotatsu.settings.compose.NavigationSettingsItem
 import org.koitharu.kotatsu.settings.compose.ActionSettingsItem
 import org.koitharu.kotatsu.settings.compose.CategoryPalette
 import org.koitharu.kotatsu.settings.compose.BaseComposeSettingsFragment
@@ -332,7 +333,7 @@ private fun TrackerScreen(
 		item {
 			SettingsGroup(title = stringResource(R.string.debug)) {
 				item { pos ->
-					ActionSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.tracker_debug_info),
 						subtitle = stringResource(R.string.tracker_debug_info_summary),
 						icon = R.drawable.ic_script,

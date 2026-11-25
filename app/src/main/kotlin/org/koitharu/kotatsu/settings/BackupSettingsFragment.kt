@@ -289,11 +289,10 @@ private fun BackupScreen(
 					)
 				}
 				item { pos ->
-					SettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.periodic_backups),
 						subtitle = stringResource(R.string.periodic_backups_summary),
 						icon = R.drawable.ic_backup_restore,
-						
 						shape = pos.shape,
 						onClick = onOpenPeriodic,
 						below = jobBar(activeJob, onCancelJob, BackupJobs.Kind.SCHEDULED, BackupJobs.Kind.TELEGRAM),
