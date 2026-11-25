@@ -1546,4 +1546,24 @@
     <string name="db_recovered_title">Database pustaka diperbaiki</string>
     <string name="db_recovered_restored">Database rusak dan sudah dipulihkan dari snapshot %s. Perubahan setelah itu hilang. File yang rusak disimpan.</string>
     <string name="db_recovered_fresh">Database rusak dan tidak ada snapshot, jadi aplikasi mulai dengan database kosong. File yang rusak disimpan.</string>
+    <string name="notes_format">Format</string>
+    <string name="notes_tool_bold">Tebal</string>
+    <string name="notes_tool_italic">Miring</string>
+    <string name="notes_tool_underline">Garis bawah</string>
+    <string name="notes_tool_strike">Coret</string>
+    <string name="notes_tool_spoiler">Spoiler</string>
+    <string name="notes_tool_code">Kode</string>
+    <string name="notes_tool_heading">Judul</string>
+    <string name="notes_tool_list">Daftar</string>
+    <string name="notes_tool_numbered">Nomor</string>
+    <string name="notes_tool_checklist">Checklist</string>
+    <string name="notes_tool_quote">Kutipan</string>
+    <string name="notes_tool_codeblock">Blok kode</string>
+    <string name="notes_tool_rule">Garis</string>
+    <string name="notes_tool_small">Teks kecil</string>
+    <string name="notes_tool_chapter">Chapter</string>
+    <string name="notes_group_text">Teks</string>
+    <string name="notes_group_blocks">Blok</string>
+    <string name="notes_group_insert">Sisipkan</string>
+    <string name="notes_chapter_label">Chapter %1$s</string>
 </resources>

@@ -1592,4 +1592,24 @@
     <string name="db_recovered_title">Library database repaired</string>
     <string name="db_recovered_restored">The database was damaged and has been restored from the snapshot of %s. Changes made after it are lost. The damaged file was kept.</string>
     <string name="db_recovered_fresh">The database was damaged and no snapshot was available, so the app started with an empty one. The damaged file was kept.</string>
+    <string name="notes_format">Formatting</string>
+    <string name="notes_tool_bold">Bold</string>
+    <string name="notes_tool_italic">Italic</string>
+    <string name="notes_tool_underline">Underline</string>
+    <string name="notes_tool_strike">Strikethrough</string>
+    <string name="notes_tool_spoiler">Spoiler</string>
+    <string name="notes_tool_code">Code</string>
+    <string name="notes_tool_heading">Heading</string>
+    <string name="notes_tool_list">List</string>
+    <string name="notes_tool_numbered">Numbered</string>
+    <string name="notes_tool_checklist">Checklist</string>
+    <string name="notes_tool_quote">Quote</string>
+    <string name="notes_tool_codeblock">Code block</string>
+    <string name="notes_tool_rule">Divider</string>
+    <string name="notes_tool_small">Small text</string>
+    <string name="notes_tool_chapter">Chapter</string>
+    <string name="notes_group_text">Text</string>
+    <string name="notes_group_blocks">Blocks</string>
+    <string name="notes_group_insert">Insert</string>
+    <string name="notes_chapter_label">Chapter %1$s</string>
 </resources>
