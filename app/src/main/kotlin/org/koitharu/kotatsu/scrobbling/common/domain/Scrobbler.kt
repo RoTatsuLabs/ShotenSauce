@@ -123,6 +123,8 @@ abstract class Scrobbler(
 			total = total,
 			lastLocal = lastLocal,
 			localFinished = manga.state == MangaState.FINISHED,
+			localOngoing = manga.state == MangaState.ONGOING || manga.state == MangaState.PAUSED ||
+				manga.state == MangaState.UPCOMING,
 			smart = smart,
 		)
 		if (next != null) {

@@ -19,8 +19,9 @@ class SmartStatusTest {
 		total: Int = 0,
 		lastLocal: Int = 100,
 		localFinished: Boolean = false,
+		localOngoing: Boolean = false,
 		smart: Boolean = true,
-	) = SmartStatus.next(current, chapter, previous, total, lastLocal, localFinished, smart)
+	) = SmartStatus.next(current, chapter, previous, total, lastLocal, localFinished, localOngoing, smart)
 
 	@Test
 	fun plannedBecomesReading() {
@@ -64,5 +65,13 @@ class SmartStatusTest {
 	fun finishedTitlesAreLeftAlone() {
 		assertNull(next(COMPLETED, chapter = 50, previous = 50, total = 50))
 		assertNull(next(null, chapter = 3))
+	}
+
+	@Test
+	fun ongoingTitleIsNeverCompleted() {
+		// The tracker lists only the chapters out so far, and all of them have been read
+		assertNull(next(READING, chapter = 28, previous = 27, total = 28, localOngoing = true))
+		assertNull(next(RE_READING, chapter = 28, previous = 27, lastLocal = 28, localOngoing = true))
+		assertEquals(READING, next(PLANNED, chapter = 28, total = 28, localOngoing = true))
 	}
 }

@@ -17,6 +17,8 @@ internal object SmartStatus {
 	 * @param total chapters the tracker knows the title has, or 0 when it does not say
 	 * @param lastLocal the last chapter number the source offers
 	 * @param localFinished whether the source says the title is finished
+	 * @param localOngoing whether the source says the title is still running (ongoing, paused or upcoming);
+	 * such a title is never marked Completed, however many chapters the tracker lists
 	 * @param smart whether the extra rules are on; the Planned to Reading step always applies
 	 */
 	fun next(
@@ -26,6 +28,7 @@ internal object SmartStatus {
 		total: Int,
 		lastLocal: Int,
 		localFinished: Boolean,
+		localOngoing: Boolean,
 		smart: Boolean,
 	): ScrobblingStatus? {
 		if (chapter <= 0) return null
@@ -44,6 +47,9 @@ internal object SmartStatus {
 			}
 			if (status == ScrobblingStatus.READING || status == ScrobblingStatus.RE_READING) {
 				val reachedEnd = when {
+					// Trackers often list only the chapters released so far, so a title the source still
+					// calls ongoing is never finished just because everything out has been read
+					localOngoing -> false
 					total > 0 -> chapter >= total
 					else -> localFinished && lastLocal > 0 && chapter >= lastLocal
 				}
