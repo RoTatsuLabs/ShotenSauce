@@ -239,9 +239,9 @@ class MangaBakaRepository @Inject constructor(
 	) { "Scrobbling info for manga $mangaId not found" }
 
 	/**
-	 * Only the fields we own are sent: MangaBaka nulls out any key present in the PUT body, so
-	 * omitting `is_private`, and `start_date` and `finish_date` unless [setStartDate] or [setFinishDate], keeps what the
-	 * user set on the site.
+	 * MangaBaka nulls out any key present in the PUT body, so only the fields we own are sent.
+	 * `is_private` is always omitted, and `start_date` and `finish_date` are omitted unless
+	 * [setStartDate] or [setFinishDate], which keeps what the user set on the site.
 	 */
 	private suspend fun pushRate(
 		mangaId: Long,

@@ -8,27 +8,25 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
-/** The user's online status, as far as Rich Presence changes it. */
 enum class PresenceStatus { Online, Idle, DoNotDisturb }
 
-/** The connection to Discord that [DiscordPresenceController] drives. */
 interface DiscordPresenceTransport {
 
 	/** True while connecting or connected. */
 	val isActive: Boolean
 
-	/** Starts connecting. False when that is not possible, e.g. nobody is signed in. */
+	/** Returns false when connecting is not possible, e.g. nobody is signed in. */
 	suspend fun connect(): Boolean
 
 	fun setOnlineStatus(status: PresenceStatus)
 
 	fun setActivity(activity: DiscordNativeActivity)
 
-	/** Takes the presence down. With [restoreStatus] the user's own online status is put back. */
+	/** With [restoreStatus] the user's own online status is put back. */
 	fun disconnect(restoreStatus: Boolean)
 }
 
-/** What the controller needs to know from settings, read again on every call. */
+/** Settings snapshot, read again on every controller call. */
 data class DiscordPresenceConfig(
 	val isEnabled: Boolean,
 	val isSignedIn: Boolean,
@@ -37,17 +35,17 @@ data class DiscordPresenceConfig(
 )
 
 /**
- * Decides what the app's one Rich Presence session does as readers come and go.
+ * Drives the app's single Rich Presence session as readers come and go.
  *
- * Every call names the reader it comes from, its `owner`. A reader that is closing can run its
- * teardown after the next one has started, and must not touch that one's session.
+ * Every call names the reader it comes from (`owner`). A closing reader can run its teardown after
+ * the next one has started, so calls from a stale owner are ignored.
  *
  * With "reading presence" on: the user is Do Not Disturb while reading and Idle while the app is in
- * the background with the reader still open. Leaving the reader restores Online and ends the session after
- * [leaveDebounceMs]; coming back before that keeps the session and its timestamp. With it off,
+ * the background with the reader still open. Leaving the reader restores Online and ends the session
+ * after [leaveDebounceMs]; coming back before that keeps the session and its timestamp. With it off,
  * the user's online status is never touched and leaving ends the session at once.
  *
- * Updates to the presence itself are spaced at least [updateDebounceMs] apart.
+ * Presence updates are spaced at least [updateDebounceMs] apart.
  */
 class DiscordPresenceController(
 	private val transport: DiscordPresenceTransport,
@@ -71,7 +69,6 @@ class DiscordPresenceController(
 	private var lastBuild: (suspend () -> DiscordNativeActivity?)? = null
 	private var lastShowTimestamp = true
 
-	/** The reader of [owner] is on screen. A teardown that is waiting to run is cancelled. */
 	fun enter(owner: Any) = synchronized(lock) {
 		this.owner = owner
 		cancelTeardownLocked()
@@ -82,10 +79,10 @@ class DiscordPresenceController(
 	}
 
 	/**
-	 * Shows what [build] returns, at most once per debounce period (the latest call wins). It is
-	 * called when the presence is about to be published, so it sees the freshest reading state.
-	 * The elapsed-time counter starts with the first activity of a session and keeps running
-	 * across updates; [showTimestamp] only decides whether it is shown.
+	 * Shows what [build] returns, at most once per debounce period (the latest call wins). [build] runs
+	 * just before publishing, so it sees the freshest reading state. The elapsed-time counter starts
+	 * with the session's first activity and keeps running across updates; [showTimestamp] only
+	 * decides whether it is shown.
 	 */
 	fun update(
 		owner: Any,
@@ -130,7 +127,6 @@ class DiscordPresenceController(
 		}
 	}
 
-	/** The app went to the background with the reader still open. */
 	fun setIdle(owner: Any) {
 		synchronized(lock) {
 			if (this.owner !== owner || !config().isReadingPresence) return
@@ -138,7 +134,6 @@ class DiscordPresenceController(
 		}
 	}
 
-	/** The reader of [owner] left the screen. */
 	fun leave(owner: Any) {
 		if (!config().isReadingPresence) {
 			stop(owner)
@@ -150,7 +145,6 @@ class DiscordPresenceController(
 		}
 	}
 
-	/** The reader of [owner] is gone for good. */
 	fun release(owner: Any) {
 		if (config().isReadingPresence) {
 			synchronized(lock) {
@@ -224,7 +218,6 @@ class DiscordPresenceController(
 		teardownJob = null
 	}
 
-	/** Cancels pending work and drops the connection, putting the user's own status back. */
 	private fun teardownLocked() {
 		updateJob?.cancel()
 		updateJob = null

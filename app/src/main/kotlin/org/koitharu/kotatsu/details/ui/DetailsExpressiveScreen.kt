@@ -53,10 +53,7 @@ import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaTag
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingInfo
 
-/**
- * Navigation/action hooks for the expressive details screen. The activity owns the router
- * and supplies these so the Compose layer stays free of Android navigation plumbing.
- */
+/** Callbacks supplied by the activity, which owns the router, so the Compose layer needs no navigation code. */
 class DetailsExpressiveActions(
 	val onCoverClick: (Manga) -> Unit,
 	val onTitleClick: (String) -> Unit,
@@ -105,8 +102,8 @@ fun DetailsExpressiveScreen(
 	actions: DetailsExpressiveActions,
 ) {
 	val manga = details?.toManga()
-	// A tracker knows where a title was made, so its type outranks the genre a source sent
-	// and a novel source is a novel even when neither of them says so
+	// A tracker's type outranks the source's genre tags. A novel source counts as a novel even
+	// when neither says so.
 	val novelLabel = stringResource(R.string.content_type_novel)
 	val typeLabel = manga?.let {
 		resolveFormats(it.tags.formatTags(), scrobblings.map { info -> info.type }).firstOrNull()
@@ -234,9 +231,8 @@ fun DetailsExpressiveScreen(
 			}
 		}
 
-			// Floating action dock: a "N chapters" pill stacked above the read FAB. Both pin to the
-			// bottom-end and stay clear of the navigation bar; the modal chapters sheet draws its own
-			// scrim over them, so they read as "behind" the sheet without any extra hide/show logic.
+			// Floating dock: the chapters pill above the read FAB, pinned bottom-end. The modal chapters
+			// sheet's scrim covers it, so no extra hide/show logic is needed.
 			ActionDock(
 				historyInfo = historyInfo,
 				isLoading = isLoading,

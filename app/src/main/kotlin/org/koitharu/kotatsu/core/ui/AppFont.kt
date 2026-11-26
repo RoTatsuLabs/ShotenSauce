@@ -54,7 +54,6 @@ object AppFont {
 
 	fun libraryFile(context: Context, id: String) = File(libraryDir(context), "$id.font")
 
-	/** Every font the user has added, by name. */
 	fun library(context: Context): List<Entry> = libraryDir(context)
 		.listFiles { f -> f.extension == "font" }
 		.orEmpty()
@@ -87,7 +86,6 @@ object AppFont {
 		}
 	}
 
-	/** Makes a library font the one the app uses. */
 	fun select(context: Context, id: String): Boolean {
 		val source = libraryFile(context, id)
 		if (!source.isFile) return false
@@ -100,7 +98,7 @@ object AppFont {
 		}
 	}
 
-	/** Goes back to the app's own font. The library is left alone. */
+	/** Reverts to the default font. Fonts in the library are kept. */
 	fun clearActive(context: Context) {
 		file(context).delete()
 		invalidate()

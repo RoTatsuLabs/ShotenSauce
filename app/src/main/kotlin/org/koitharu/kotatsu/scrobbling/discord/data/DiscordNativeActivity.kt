@@ -1,10 +1,8 @@
 package org.koitharu.kotatsu.scrobbling.discord.data
 
 /**
- * A Rich Presence payload for [DiscordRpcManager.setActivity], mirroring the fields that
- * discord_bridge.cpp forwards to discordpp::Activity.
- *
- * Timestamps are epoch seconds, and 0 means unset.
+ * Rich Presence payload for [DiscordRpcManager.setActivity]. The fields mirror what
+ * discord_bridge.cpp forwards to discordpp::Activity. Timestamps are epoch seconds, 0 means unset.
  */
 data class DiscordNativeActivity(
 	val name: String,
@@ -25,7 +23,7 @@ data class DiscordNativeActivity(
 
 	companion object {
 
-		/** discordpp::ActivityTypes::Watching */
+		/** Value of discordpp::ActivityTypes::Watching. */
 		const val TYPE_WATCHING = 3
 	}
 }

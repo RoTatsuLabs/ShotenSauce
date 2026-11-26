@@ -94,7 +94,7 @@ import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.util.ext.mangaSourceExtra
 import org.koitharu.kotatsu.core.util.ext.stableMangaCoverKey
 
-/** What a row or the storage card can ask for. The toolbar menu and the selection bar live in the activity. */
+/** Actions a row or the storage card can request. The toolbar menu and the selection bar are handled by the activity. */
 class DownloadsCallbacks(
 	val onOpen: (DownloadItemModel) -> Unit,
 	val onExpand: (DownloadItemModel) -> Unit,
@@ -138,7 +138,6 @@ internal fun DownloadItemModel.bucket(): Bucket = when {
 	else -> Bucket.WAITING
 }
 
-/** The three tabs, swiped or tapped like in 1DM and ADM. */
 internal enum class Page(@StringRes val title: Int, @StringRes val empty: Int) {
 	ACTIVE(R.string.downloads_tab_active, R.string.downloads_empty_active),
 	FAILED(R.string.downloads_tab_failed, R.string.downloads_empty_failed),
@@ -151,7 +150,7 @@ internal fun Bucket.page(): Page = when (this) {
 	else -> Page.ACTIVE
 }
 
-/** Every download of the tab that [item] is on, for "select all". */
+/** Every download on the same tab as [item], used by "select all". */
 internal fun List<DownloadItemModel>.onSamePageAs(item: DownloadItemModel): List<DownloadItemModel> {
 	val page = item.bucket().page()
 	return filter { it.bucket().page() == page }
@@ -179,7 +178,7 @@ fun DownloadsScreen(
 	val byPage = all.groupBy { it.bucket().page() }
 	val pager = rememberPagerState(pageCount = { Page.entries.size })
 	val scope = rememberCoroutineScope()
-	// Open on the first tab that has something in it
+	// Open on the first tab that has content.
 	var opened by remember { mutableStateOf(false) }
 	LaunchedEffect(models != null) {
 		if (models != null && !opened) {
@@ -195,7 +194,7 @@ fun DownloadsScreen(
 		val count = byPage[page].orEmpty().size
 		if (count > 0) "${stringResource(page.title)} $count" else stringResource(page.title)
 	}
-	// Nothing here sits in a Surface, so without this the text falls back to black
+	// Nothing here sits in a Surface, so without this the text color falls back to black.
 	CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
 	Column(Modifier.fillMaxSize()) {
 		Box(Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)) {
@@ -311,7 +310,6 @@ private fun PageList(
 	}
 }
 
-/** Same look as the title of a settings group. */
 @Composable
 private fun SectionHeader(title: String, count: Int) {
 	Text(
@@ -323,7 +321,6 @@ private fun SectionHeader(title: String, count: Int) {
 	)
 }
 
-/** Live speed on top of the active tab. */
 @Composable
 private fun SpeedStrip(active: List<DownloadItemModel>) {
 	val context = LocalContext.current
@@ -367,7 +364,7 @@ private fun SpeedStrip(active: List<DownloadItemModel>) {
 	}
 }
 
-/** The saved-manga card of the storage settings, split by manga. Tap it to list the biggest ones. */
+/** Saved-manga card split by manga. Tapping it lists the largest entries. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun StorageMeter(storage: StorageSummary, onDelete: (StorageEntry) -> Unit) {
@@ -431,7 +428,6 @@ private fun StorageMeter(storage: StorageSummary, onDelete: (StorageEntry) -> Un
 
 private class RingAction(@DrawableRes val icon: Int, @StringRes val label: Int, val onClick: () -> Unit)
 
-/** The round pause, resume or retry button with the download's progress drawn around it. */
 @Composable
 private fun ActionRing(item: DownloadItemModel, hasError: Boolean, callbacks: DownloadsCallbacks) {
 	val action: RingAction? = when {
@@ -487,7 +483,7 @@ private fun DownloadRow(
 	modifier: Modifier = Modifier,
 ) {
 	val context = LocalContext.current
-	// Drag to reorder: moving past half of the row's height swaps it with the neighbour
+	// Drag to reorder: moving past half of the row's height swaps it with its neighbour.
 	var dragY by remember { mutableStateOf(0f) }
 	var dragging by remember { mutableStateOf(false) }
 	var rowHeight by remember { mutableStateOf(0) }
@@ -696,7 +692,7 @@ private fun DownloadRow(
 	}
 }
 
-/** One segment per chapter, filled as each chapter finishes, like 1DM's connection bar. */
+/** One segment per chapter, filled as each chapter finishes. */
 @Composable
 private fun SegmentedProgress(item: DownloadItemModel, barHeight: Dp = 8.dp) {
 	val track = MaterialTheme.colorScheme.surfaceVariant
@@ -743,8 +739,8 @@ private fun SegmentedProgress(item: DownloadItemModel, barHeight: Dp = 8.dp) {
 }
 
 /**
- * One segment per page of the chapter being downloaded. Finished pages are filled and the ones
- * being fetched right now are striped and moving, so the parallel connections are visible.
+ * One segment per page of the chapter being downloaded. Finished pages are filled, and pages
+ * being fetched are striped and animated.
  */
 @Composable
 private fun PageSegments(states: String) {

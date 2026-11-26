@@ -2,7 +2,6 @@ package org.koitharu.kotatsu.scrobbling.discord.data
 
 import java.util.Locale
 
-/** What the reader is showing right now, as far as Rich Presence is concerned. */
 data class ReadingSnapshot(
 	val comicTitle: String,
 	val comicUrl: String?,
@@ -29,7 +28,6 @@ data class DiscordButtonConfig(
 	val url: String,
 )
 
-/** Everything settings and resources contribute to the presence, apart from what is being read. */
 data class DiscordPresenceOptions(
 	val appName: String,
 	val customActivityName: String,
@@ -48,7 +46,7 @@ data class DiscordPresenceOptions(
 	val button2DefaultUrl: String,
 )
 
-/** Builds the [DiscordNativeActivity] to show. The timestamp is added by the session. */
+/** The start timestamp is left out here; the presence session adds it. */
 object DiscordActivityFactory {
 
 	/** Discord rejects activity text and button labels over these lengths. */
@@ -97,8 +95,8 @@ object DiscordActivityFactory {
 	}
 
 	/**
-	 * The label and link of a button, or null when it is switched off or cannot be shown: its
-	 * label is empty, its link is not a web address, or a placeholder in either has no value.
+	 * Returns null when the button is disabled or cannot be shown: the label is empty, the link is
+	 * not a web address, or a placeholder in either has no value.
 	 */
 	fun resolveButton(
 		config: DiscordButtonConfig,

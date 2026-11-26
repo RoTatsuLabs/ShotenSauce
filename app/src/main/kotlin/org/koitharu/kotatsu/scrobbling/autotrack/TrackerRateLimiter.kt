@@ -13,24 +13,22 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 
-/** The tracker asked the app to slow down, or the app is keeping its share of the budget for the user. */
+/** Thrown when the tracker asked the app to slow down, or when the app is holding back to keep budget for the user. */
 class TrackerRateLimitedException(val retryAfterSeconds: Long) :
 	IOException("Tracker rate limit reached, retry in ${retryAfterSeconds}s")
 
 /**
- * Keeps the app polite to every tracker's API.
+ * Throttles requests to tracker APIs. Every request passes through [beforeRequest] and
+ * [onResponse] (see [TrackerRateLimitInterceptor]), so the limiter knows what has been spent.
  *
- * Every request of every tracker passes through [beforeRequest] and [onResponse] (see
- * [TrackerRateLimitInterceptor]), which is how the limiter always knows what has been spent:
+ * - Requests are spaced out, since trackers run burst limiters on top of the per-minute budget.
+ * - The server's `X-RateLimit-*` headers are used where they exist (AniList). Otherwise requests
+ *   sent in the last minute are counted against a conservative limit.
+ * - A 429 blocks the tracker for the requested time (60 seconds if none is given). The block
+ *   survives an app restart.
  *
- * - requests are spaced out, as trackers run burst limiters on top of the per-minute budget;
- * - the server's own `X-RateLimit-*` headers are read where they exist (AniList), otherwise the app
- *   counts what it sent in the last minute against a conservative limit;
- * - a 429 blocks the tracker for the time it asked for (60 seconds when it said nothing). The block
- *   survives a restart of the app.
- *
- * Bulk work calls [awaitBackground] first. It stops short of the limit so that the budget is still
- * there when you open a screen yourself: your own taps are never queued behind a bulk job.
+ * Bulk work calls [awaitBackground] first. It stops short of the limit, so budget remains for
+ * user-initiated requests, which are never queued behind a bulk job.
  */
 @Singleton
 class TrackerRateLimiter @Inject constructor(
@@ -79,12 +77,11 @@ class TrackerRateLimiter @Inject constructor(
 		}
 	}
 
-	/** True while the tracker has told the app to stop. */
 	fun isBlocked(service: ScrobblerService): Boolean = synchronized(this) {
 		stateOf(service).blockedUntilWall > System.currentTimeMillis()
 	}
 
-	/** Folds a response back in. Called for every response, successful or not. */
+	/** Records a response. Called for every response, successful or not. */
 	fun onResponse(service: ScrobblerService, code: Int, limit: Int?, remaining: Int?, retryAfterSeconds: Long?) {
 		synchronized(this) {
 			val state = stateOf(service)
@@ -110,8 +107,8 @@ class TrackerRateLimiter @Inject constructor(
 	 * Suspends until a bulk operation costing about [cost] requests fits into the share of the
 	 * budget that background work may use.
 	 *
-	 * @throws TrackerRateLimitedException when that would take longer than [MAX_BACKGROUND_WAIT_MS],
-	 * such as after a long 429 timeout; the caller hands the job back to WorkManager.
+	 * @throws TrackerRateLimitedException when waiting would take longer than [MAX_BACKGROUND_WAIT_MS]
+	 * (for example after a long 429 timeout). The caller should hand the job back to WorkManager.
 	 */
 	suspend fun awaitBackground(service: ScrobblerService, cost: Int = DEFAULT_COST) {
 		while (true) {
@@ -160,8 +157,7 @@ class TrackerRateLimiter @Inject constructor(
 
 	private fun stateOf(service: ScrobblerService): State = states.getOrPut(service) {
 		State(defaultLimitOf(service)).apply {
-			// A timeout that outlived the process is honoured: reopening the app must not walk
-			// straight back into the limiter.
+			// Restore a block that outlived the process, so reopening the app does not hit the limit again.
 			blockedUntilWall = prefs.getLong(blockKey(service), 0L)
 		}
 	}

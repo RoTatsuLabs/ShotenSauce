@@ -8,9 +8,8 @@ import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerTitleType
 /**
  * What kind of title this is (manga, manhwa, manhua, webtoon...).
  *
- * Neither Mihon extensions nor the Kotatsu model carry this as a field: sources send it as one more
- * genre, so it sat among the tags. This recognises those tags so the details screen can show them
- * as the title's type instead.
+ * Neither Mihon extensions nor the Kotatsu model have a field for this: sources send it as one more
+ * genre. This recognises those tags so the details screen can show them as the title's type.
  */
 internal enum class MangaFormat(@StringRes val titleResId: Int, vararg val aliases: String) {
 	MANGA(R.string.content_type_manga, "manga"),

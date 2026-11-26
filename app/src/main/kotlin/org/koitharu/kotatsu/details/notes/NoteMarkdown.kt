@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.sp
 /** A chapter a note can point at with `@ch12` or `@ch12:5` (chapter, page). */
 data class NoteChapter(val id: Long, val number: Float, val title: String?)
 
-/** The numbered chapters of a title, one per number, so a mention finds its chapter. */
+/** Chapters with a positive number, keyed by number. Duplicates keep the first. */
 class NoteChapters(chapters: List<NoteChapter>) {
 
 	private val byNumber: Map<Float, NoteChapter> = chapters
@@ -35,7 +35,6 @@ class NoteChapters(chapters: List<NoteChapter>) {
 fun formatChapterNumber(number: Float): String =
 	if (number % 1f == 0f) number.toInt().toString() else number.toString()
 
-/** The colours the renderer and the editor styling need, taken from the theme once. */
 class NoteColors(
 	val link: Color,
 	val codeBackground: Color,
@@ -104,7 +103,7 @@ fun parseNoteBlocks(source: String): List<NoteBlock> {
 				i = j + 1
 			}
 			trimmed.startsWith(">>>") -> {
-				// Everything after it is one quote
+				// `>>>` quotes everything after it.
 				val rest = listOf(trimmed.removePrefix(">>>").trimStart()) + lines.drop(i + 1)
 				out.add(NoteBlock.Quote(i, rest.joinToString("\n").trim('\n')))
 				i = lines.size
@@ -142,18 +141,16 @@ private fun parseLine(index: Int, raw: String): NoteBlock {
 	return if (raw.isBlank()) NoteBlock.Blank(index) else NoteBlock.Paragraph(index, raw)
 }
 
-/** What the inline renderer needs besides the text. */
 class InlineContext(
 	val colors: NoteColors,
 	val chapters: NoteChapters,
 	val revealed: Set<Int>,
-	/** Tells apart the spoilers of different lines. */
+	/** Keeps spoiler ids unique across lines. */
 	val scope: Int,
 	val onReveal: (Int) -> Unit,
 	val onChapter: (NoteChapter, Int?) -> Unit,
 )
 
-/** Bold, italic, underline, strikethrough, code, spoilers, links and chapter mentions inside one piece of text. */
 fun renderNoteInline(text: String, ctx: InlineContext): AnnotatedString = buildAnnotatedString {
 	appendInline(text, ctx, 0)
 }
@@ -234,10 +231,7 @@ private fun AnnotatedString.Builder.appendChapter(number: String, page: String?,
 	}
 }
 
-/**
- * The note source with its syntax coloured, for the editor. The text itself is not changed, only styled,
- * so the cursor and the selection stay where they are.
- */
+/** Styles the note source for the editor without changing the text, so the cursor and selection stay put. */
 fun styleNoteSource(source: String, c: NoteColors): AnnotatedString = buildAnnotatedString {
 	append(source)
 	var offset = 0

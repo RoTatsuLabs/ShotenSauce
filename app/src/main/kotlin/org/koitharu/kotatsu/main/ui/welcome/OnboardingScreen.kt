@@ -74,7 +74,7 @@ import org.koitharu.kotatsu.settings.compose.ColorSchemePickerRow
 
 private enum class Slide { SECRET_SETTINGS, WELCOME, STORAGE, SYNC, FINISH }
 
-// The secret space has no cloud sync, and starts by asking whether to reuse the main app settings.
+// The secret space has no cloud sync and starts by asking whether to copy the main app settings.
 private val NORMAL_SLIDES = listOf(Slide.WELCOME, Slide.STORAGE, Slide.SYNC, Slide.FINISH)
 private val SECRET_SLIDES = listOf(Slide.WELCOME, Slide.STORAGE, Slide.SECRET_SETTINGS)
 private val CARD_SHAPE = RoundedCornerShape(24.dp)
@@ -595,8 +595,6 @@ private fun PermissionRow(
     }
 }
 
-// ── Secret space: settings ────────────────────────────────────────────────────
-
 @Composable
 private fun SecretSettingsSlide(copyMain: Boolean, onChange: (Boolean) -> Unit) {
     Column(
@@ -619,8 +617,6 @@ private fun SecretSettingsSlide(copyMain: Boolean, onChange: (Boolean) -> Unit) 
         )
     }
 }
-
-// ── Slide 2: Restore ───────────────────────────────────────────────────────
 
 @Composable
 private fun SyncSlide(isLoading: Boolean, actions: OnboardingActions) {

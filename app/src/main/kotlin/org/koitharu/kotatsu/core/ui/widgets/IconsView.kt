@@ -84,7 +84,7 @@ class IconsView @JvmOverloads constructor(
 		imageView.isVisible = true
 	}
 
-	/** The logo of the source the title is already favourited from, always the last icon. */
+	/** Shows the logo of the source the title is already favourited from, always as the last icon. */
 	private fun showSource(source: MangaSource) {
 		val view = sourceView ?: FaviconView(context).also {
 			it.importantForAccessibility = IMPORTANT_FOR_ACCESSIBILITY_NO

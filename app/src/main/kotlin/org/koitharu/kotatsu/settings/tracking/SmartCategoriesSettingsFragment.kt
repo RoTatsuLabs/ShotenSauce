@@ -118,7 +118,7 @@ private fun SmartCategoriesScreen(
 						val id = bindings[status] ?: 0L
 						SettingsItem(
 							title = stringResource(status.labelResId),
-							// A deleted category reads as unbound, which is also how the controller treats it
+							// A deleted category shows as unbound, matching how the controller treats it.
 							subtitle = categories.firstOrNull { it.id == id }?.title ?: unbound,
 							icon = status.iconResId,
 							shape = pos.shape,

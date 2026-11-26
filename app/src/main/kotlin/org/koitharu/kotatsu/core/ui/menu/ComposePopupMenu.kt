@@ -29,7 +29,7 @@ fun PopupMenuBox(
 	modifier: Modifier = Modifier,
 	button: @Composable (open: () -> Unit) -> Unit,
 ) {
-	// MenuPopup needs a real View to bloom out of, so an empty one is parked under the button
+	// MenuPopup needs a real View to anchor to, so an empty one is placed under the button
 	val anchor = remember { mutableStateOf<View?>(null) }
 	Box(modifier, contentAlignment = Alignment.Center) {
 		AndroidView(

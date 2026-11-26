@@ -59,7 +59,6 @@ private val FONT_MIME_TYPES = arrayOf(
 	"application/octet-stream",
 )
 
-/** Pick the app's font from the ones you added, or add another. */
 @AndroidEntryPoint
 class FontSettingsFragment : BaseComposeSettingsFragment(R.string.app_font) {
 

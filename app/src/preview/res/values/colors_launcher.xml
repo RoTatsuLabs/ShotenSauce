@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-	<!-- The preview build wears orange instead of blue, so it is easy to tell from the release app. -->
+	<!-- Orange launcher colours set the preview build apart from the release app. -->
 	<color name="launcher_default_dark_fg">#FFB77C</color>
 	<color name="launcher_default_light_fg">#A04F00</color>
 	<color name="launcher_default_light_bg">#F7EDE4</color>

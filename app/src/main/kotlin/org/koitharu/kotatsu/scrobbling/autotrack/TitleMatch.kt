@@ -113,7 +113,7 @@ internal object TitleMatch {
 
 	/**
 	 * The nearest entry when [pick] found nothing clear: the best score among the entries that do not
-	 * conflict, as long as it is a fair match. Used only when the user asks for it by hand.
+	 * conflict, as long as it is a fair match. Used only for manual linking.
 	 */
 	fun closest(manga: Manga, candidates: List<ScrobblerManga>): ScrobblerManga? {
 		val names = namesOf(manga)

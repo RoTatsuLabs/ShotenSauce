@@ -242,7 +242,6 @@ private fun rememberButtonPrefs(
 	return ButtonPrefs(enabled, label, url)
 }
 
-/** One button's switch, label and link, as rows of the surrounding "Buttons" group. */
 private fun SettingsGroupScope.discordButtonItems(
 	number: Int,
 	prefs: ButtonPrefs,

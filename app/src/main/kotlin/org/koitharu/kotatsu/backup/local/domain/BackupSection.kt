@@ -33,7 +33,7 @@ enum class BackupSection(
 
 		fun byEntryName(name: String): BackupSection? = entries.find { it.entryName == name }
 
-		/** Always keeps the index and adds categories when favourites are chosen, as restore requires. */
+		/** Adds the index, and categories when favourites are selected, as restore requires. */
 		fun normalize(selected: Set<BackupSection>): Set<BackupSection> {
 			val result = EnumSet.of(INDEX)
 			result.addAll(selected)

@@ -191,8 +191,7 @@ class WebtoonReaderFragment : BaseReaderFragment<FragmentReaderWebtoonBinding>()
 	override fun switchPageBy(delta: Int) {
 		with(requireViewBinding().recyclerView) {
 			if (!canScrollVertically(delta)) {
-				// Already at the very top/bottom of the loaded content — mirror the paged
-				// reader and give a "blocked" cue instead of a silent no-op scroll.
+				// Scrolling past the top or bottom of the loaded content gives the same "blocked" cue as the paged reader.
 				hapticFeedback(HapticEffect.REJECT)
 			}
 			if (isAnimationEnabled()) {

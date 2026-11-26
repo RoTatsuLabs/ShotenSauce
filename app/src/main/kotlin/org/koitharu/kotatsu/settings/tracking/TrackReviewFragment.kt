@@ -79,8 +79,8 @@ import org.koitharu.kotatsu.settings.compose.SettingsScaffold
 import javax.inject.Inject
 
 /**
- * The favourites that have no clear match on a tracker: one full screen list, grouped per tracker,
- * with the cover and the full title so each one can be picked by hand.
+ * Favourites that have no clear match on a tracker, grouped per tracker. Each entry shows the cover
+ * and full title so it can be linked by hand.
  */
 @AndroidEntryPoint
 class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_review) {
@@ -125,7 +125,7 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 
 	override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
 		super.onViewCreated(view, savedInstanceState)
-		// Picking an entry by hand (or un-favouriting) changes the list while this screen stays open
+		// Linking an entry by hand or un-favouriting it changes the list while this screen is open.
 		database.invalidationTracker.createFlow("scrobblings", "favourites").observe(viewLifecycleOwner) {
 			reload()
 		}
@@ -141,7 +141,7 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 				}
 			}
 			entries.value = found
-			// The last one was linked: nothing is left to show, so go back to Services
+			// Nothing left to review, so leave the screen.
 			if (found.isEmpty()) parentFragmentManager.popBackStack()
 		}
 	}
@@ -170,7 +170,7 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 		SettingsScaffold {
 			if (entries.isEmpty()) return@SettingsScaffold
 			val services = entries.map { it.service }.distinct()
-			// A filter whose titles were all linked meanwhile no longer exists: show everything again
+			// If every title of the selected tracker was linked, the filter is dropped and all entries show.
 			val filter = selectedService?.takeIf { id -> services.any { it.id == id } }
 			val titleCount = entries.map { it.manga.id }.distinct().size
 			item {
@@ -217,7 +217,6 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 		}
 	}
 
-	/** What the list is and what can be done with it, instead of a bare button on top of it. */
 	@Composable
 	private fun ReviewHeader(titleCount: Int, onLinkAll: () -> Unit) {
 		Surface(
@@ -289,13 +288,13 @@ class TrackReviewFragment : BaseComposeSettingsFragment(R.string.auto_track_revi
 					text = manga.title,
 					style = MaterialTheme.typography.titleSmall,
 					fontWeight = FontWeight.SemiBold,
-					// A plain Row gives no content colour, which left the title dark on the dark card
+					// A plain Row provides no content color, so set it explicitly to keep the title readable on the card.
 					color = MaterialTheme.colorScheme.onSurface,
 					maxLines = 2,
 					overflow = TextOverflow.Ellipsis,
 				)
 				Text(
-					// The source's own name; its internal id is not something to read
+					// Show the source's display name, not its internal id.
 					text = manga.source.getTitle(context),
 					style = MaterialTheme.typography.bodySmall,
 					color = MaterialTheme.colorScheme.onSurfaceVariant,

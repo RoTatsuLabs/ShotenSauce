@@ -108,7 +108,6 @@ fun Manga.toSManga(): SManga {
 // "Vol.1 Ch. 4", "Volume 2". Decimal volumes and a bare "v2" (usually a re-release) are not matched.
 private val chapterVolume = Regex("""\bvol(?:ume)?\.?\s*(\d{1,3})(?!\d|\.\d)""", RegexOption.IGNORE_CASE)
 
-/** The volume named in the chapter title, or 0 when it does not name one. */
 fun SChapter.parseVolume(): Int = chapterVolume.find(name)?.groupValues?.get(1)?.toIntOrNull() ?: 0
 
 fun SChapter.toMangaChapter(source: MihonMangaSource, overrideNumber: Float? = null): MangaChapter {

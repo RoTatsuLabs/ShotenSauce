@@ -14,13 +14,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Keeps every running download polite to the site it reads from: at most
- * the configured number of requests in flight per source across the whole app, plus the
- * optional per-source slowdown.
+ * Limits in-flight requests per source across the whole app, plus an optional per-source slowdown.
  *
- * The per-chapter page parallelism inside a download is unaware of other downloads, so without a
- * shared limit two or three downloads from the same site would multiply it and earn a rate-limit
- * block, which costs far more time than it saves.
+ * Page parallelism inside one download does not know about other downloads. Without a shared limit,
+ * several downloads from the same site multiply it and risk a rate-limit block.
  */
 @Singleton
 class DownloadSourceThrottler @Inject constructor(
@@ -38,7 +35,6 @@ class DownloadSourceThrottler @Inject constructor(
 	 */
 	suspend fun pace(source: MangaSource) = awaitSlot(source)
 
-	/** Pages fetched at once from [source]: its own limit if it has one, otherwise the global one. */
 	fun connectionsFor(source: MangaSource): Int {
 		val own = settingsFor(source).downloadConnections
 		return if (own > 0) own else appSettings.downloadConnections
@@ -52,7 +48,7 @@ class DownloadSourceThrottler @Inject constructor(
 	suspend fun <T> withRequestPermit(source: MangaSource, block: suspend () -> T): T {
 		val limit = connectionsFor(source)
 		val semaphore = synchronized(semaphores) {
-			// Rebuilt when the limit setting changes; requests already running keep their old permit
+			// Rebuilt when the limit setting changes; running requests keep their old permit.
 			val current = semaphores[source]
 			if (current != null && current.first == limit) {
 				current.second

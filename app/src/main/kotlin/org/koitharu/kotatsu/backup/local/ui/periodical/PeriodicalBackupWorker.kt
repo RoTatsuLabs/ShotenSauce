@@ -81,7 +81,7 @@ class PeriodicalBackupWorker @AssistedInject constructor(
 		isTelegramOnly = !saveLocally
 		val job = currentCoroutineContext()[Job]
 		val kind = if (saveLocally) BackupJobs.Kind.SCHEDULED else BackupJobs.Kind.TELEGRAM
-		// Another backup or restore is running: try again later instead of running two at once
+		// Another backup or restore is running: retry later so two never run at once
 		if (!BackupJobs.tryAcquire(kind) { job?.cancel() }) {
 			return Result.retry()
 		}

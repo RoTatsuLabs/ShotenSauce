@@ -253,8 +253,8 @@ class MihonMangaRepository(
 		// derive it from the chapter name via ChapterRecognition when the extension left it unset
 		// (chapter_number < 0), instead of inventing a sequential index.
 		val orderedChapters = normalizeMihonChapterOrder(uniqueChapters)
-		// The chapter list groups and sorts by volume first, so a volume is only trusted when every
-		// chapter names one. A few "Vol.2" names among unlabelled ones would split the list in two.
+		// The chapter list groups and sorts by volume first, so volumes are used only when every
+		// chapter names one. A few "Vol.2" names among unlabelled chapters would split the list.
 		val volumes = orderedChapters.map { it.parseVolume() }
 		val useVolumes = volumes.isNotEmpty() && volumes.all { it > 0 }
 		val chapters = orderedChapters

@@ -231,8 +231,7 @@ abstract class BasePagerReaderFragment : BaseReaderFragment<FragmentReaderPagerB
 			val target = (mihonScroller?.currentItem ?: currentItem) + delta
 			val lastIndex = (adapter?.itemCount ?: 0) - 1
 			if (lastIndex >= 0 && target !in 0..lastIndex) {
-				// Trying to page past the very first / last loaded page — give a "blocked" cue
-				// instead of silently doing nothing.
+				// Paging past the first or last loaded page gives a "blocked" cue.
 				hapticFeedback(HapticEffect.REJECT)
 			}
 			if (scrollMihon(target)) return

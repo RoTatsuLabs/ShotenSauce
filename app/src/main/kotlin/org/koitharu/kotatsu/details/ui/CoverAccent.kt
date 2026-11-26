@@ -26,14 +26,14 @@ private const val COLOR_COUNT = 16
 private const val MIN_CHROMA = 36.0
 
 /**
- * An accent taken from the cover: the colour that stands out most in the image, kept at a tone that
- * reads well on the current surface. Null until the cover is loaded, or when it has no usable colour.
+ * The cover's most prominent colour, adjusted to a tone that reads well on the current surface.
+ * Null until the cover is loaded, or when it has no usable colour.
  */
 @Composable
 internal fun rememberCoverAccent(
 	imageLoader: ImageLoader,
 	coverUrl: String?,
-	/** Extension and plugin covers are only fetched when the request names the source they come from. */
+	/** Extension and plugin covers load only when the request names their source. */
 	source: MangaSource?,
 	coverRefreshes: Int,
 	isDark: Boolean,

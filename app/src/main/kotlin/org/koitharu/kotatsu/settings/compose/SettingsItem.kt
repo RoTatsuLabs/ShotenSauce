@@ -296,8 +296,8 @@ fun SwitchSettingsItem(
 		enabled = enabled,
 		accentColor = if (main) mainContent else null,		containerColor = container,
 		titleStyle = if (main) MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Medium) else MaterialTheme.typography.titleMedium,
-		// The toggle haptic is fired by [onCheckedChangeHaptic] so a row tap and a thumb tap
-		// feel identical — suppress the generic click effect to avoid a double buzz.
+		// [onCheckedChangeHaptic] already fires the toggle haptic, so the generic click effect is off
+		// to avoid a double buzz.
 		hapticEffect = null,
 		onClick = if (enabled) {
 			{ onCheckedChangeHaptic(!checked) }

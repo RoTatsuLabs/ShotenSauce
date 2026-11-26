@@ -51,20 +51,18 @@ class DiscordRpc @Inject constructor(
 		session.release(this)
 	}
 
-	/** The reader came on screen. */
 	fun onEnterReader() {
 		session.enter(this)
 	}
 
-	/** Takes the presence down right away. */
 	fun clearRpc() {
 		session.stop(this)
 	}
 
 	/**
-	 * The reader stopped. Closing it, a rotation or another screen of the app means the reader is
-	 * left. If no screen of the app is left on screen, the user went to another app with the
-	 * reader still open, which shows as Idle (when smart account status is on).
+	 * Closing the reader, rotating, or opening another screen of the app counts as leaving the
+	 * reader. If no screen of the app is visible, the user switched to another app with the reader
+	 * still open, and the presence shows as Idle (when smart account status is on).
 	 */
 	fun onReaderStopped(isFinishing: Boolean, isChangingConfigurations: Boolean) {
 		val leftApp = !isFinishing && !isChangingConfigurations && !DiscordRpcManager.hasStartedActivity()
@@ -75,7 +73,7 @@ class DiscordRpc @Inject constructor(
 		}
 	}
 
-	/** Rich Presence is optional: whatever goes wrong here must never reach the reader. */
+	/** Rich Presence is optional, so failures here are swallowed and never reach the reader. */
 	@AnyThread
 	fun updateRpc(details: MangaDetails, state: ReaderUiState, coverUrl: String?) {
 		try {
@@ -136,8 +134,8 @@ class DiscordRpc @Inject constructor(
 	}
 
 	/**
-	 * The chapter's web address. Downloaded chapters replace their online twins in the merged list
-	 * and carry a file path, so the chapter is looked up in the source's own manga instead.
+	 * Downloaded chapters replace their online counterparts in the merged list and carry a file
+	 * path, so the chapter is looked up in the source's own manga to get its web address.
 	 */
 	private suspend fun findChapterUrl(details: MangaDetails, chapter: MangaChapter): String? {
 		val manga = details.sourceManga.takeUnless { it.isLocal } ?: return null

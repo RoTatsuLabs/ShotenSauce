@@ -48,10 +48,9 @@ import coil3.ImageLoader
 import javax.inject.Inject
 
 /**
- * Brand-new Material 3 Expressive details screen, rendered entirely with Jetpack Compose. It shares
+ * The Material 3 Expressive details screen, rendered entirely with Jetpack Compose. It shares
  * [DetailsViewModel] and the [org.koitharu.kotatsu.details.ui.pager.ChaptersPagesSheet] bottom sheet
- * with the legacy [DetailsActivity], but lays everything out fresh: a frosted cover backdrop, an
- * oversized rounded poster, playful stat pills, and large tactile cards.
+ * with the legacy [DetailsActivity] but has its own layout.
  */
 @AndroidEntryPoint
 class DetailsExpressiveActivity :
@@ -312,8 +311,7 @@ class DetailsExpressiveActivity :
 		bottomInset.intValue = bars.bottom
 		viewBinding.appbar.updatePadding(top = bars.top)
 		viewBinding.containerChapters?.updatePadding(top = bars.top)
-		// Match the rest of the app: rest the refresh indicator just under the status bar (the same
-		// offset the old details screen used), not pushed down below the whole top bar.
+		// The refresh indicator rests just under the status bar, not below the whole top bar.
 		viewBinding.swipeRefreshLayout.setProgressViewOffset(false, bars.top, bars.top + 180)
 		return insets
 	}

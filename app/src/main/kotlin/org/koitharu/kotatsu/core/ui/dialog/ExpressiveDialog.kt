@@ -216,7 +216,7 @@ fun ExpressiveDialogCard(
 			// Concentric with the round corner button: its radius plus the card padding.
 			shape = RoundedCornerShape(CornerButtonSize / 2 + CardPadding),
 			color = colors.surfaceContainer,
-			// Same outline as the floating nav bar
+			// Same outline as the floating nav bar.
 			border = BorderStroke(1.dp, colors.outlineVariant),
 			modifier = Modifier
 				.fillMaxWidth()
@@ -672,7 +672,7 @@ fun showActionChoiceDialog(
 					onClick = dismiss,
 				)
 			},
-			// A long list goes in the scrollable body; a pinned footer can't scroll and clips the rest.
+			// A long list goes in the scrollable body; a pinned footer cannot scroll and would clip it.
 			footer = if (actions.isNotEmpty() && !scrollable) actionPills else null,
 			content = if (actions.isNotEmpty() && scrollable) actionPills else null,
 		)

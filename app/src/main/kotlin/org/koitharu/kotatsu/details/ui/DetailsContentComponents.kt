@@ -433,8 +433,8 @@ internal fun ScrobblingSection(
 								horizontalArrangement = Arrangement.SpaceBetween,
 								verticalAlignment = Alignment.CenterVertically,
 							) {
-								// Whatever the tracker itself reports — the app's own chapter list
-								// may well disagree with it, and this card speaks for the tracker.
+								// Shows what the tracker reports. The app's own chapter list may disagree with it,
+								// and this card speaks for the tracker.
 								Text(
 									text = when {
 										info.chapter <= 0 -> ""

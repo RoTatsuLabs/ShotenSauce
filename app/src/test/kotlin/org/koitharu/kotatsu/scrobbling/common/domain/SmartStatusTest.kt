@@ -69,7 +69,7 @@ class SmartStatusTest {
 
 	@Test
 	fun ongoingTitleIsNeverCompleted() {
-		// The tracker lists only the chapters out so far, and all of them have been read
+		// The tracker lists only the chapters released so far, and all of them have been read.
 		assertNull(next(READING, chapter = 28, previous = 27, total = 28, localOngoing = true))
 		assertNull(next(RE_READING, chapter = 28, previous = 27, lastLocal = 28, localOngoing = true))
 		assertEquals(READING, next(PLANNED, chapter = 28, total = 28, localOngoing = true))

@@ -38,8 +38,8 @@ import javax.inject.Inject
 
 /**
  * Tracks the favourites that are not on a tracker yet. One pass handles everything pending, so a new
- * favourite and the "track untracked favourites" button use the same work. Doing it is idempotent: a
- * pass that is stopped halfway, by the system or by a rate limit, simply continues where it left off.
+ * favourite and the "track untracked favourites" button share the same work. A pass is idempotent: if
+ * the system or a rate limit stops it halfway, the next pass continues where it left off.
  */
 @HiltWorker
 class AutoTrackWorker @AssistedInject constructor(
@@ -86,8 +86,8 @@ class AutoTrackWorker @AssistedInject constructor(
 				skipped += service
 			} catch (e: Exception) {
 				e.printStackTraceDebug()
-				// A 429 mid-request surfaces as an ordinary error; it is not this title's fault, so it stays
-				// pending for the next pass instead of counting as failed.
+				// A 429 mid-request surfaces as an ordinary error. It is not this title's fault, so the title
+				// stays pending for the next pass and is not counted as failed.
 				if (limiter.isBlocked(service)) hitLimit = true else failed++
 			}
 			setProgress(workDataOf(KEY_DONE to index + 1, KEY_TOTAL to pending.size, KEY_REVIEW to review))

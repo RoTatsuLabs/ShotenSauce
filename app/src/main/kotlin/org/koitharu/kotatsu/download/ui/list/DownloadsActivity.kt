@@ -37,8 +37,8 @@ import org.koitharu.kotatsu.settings.compose.DropSauceTheme
 import javax.inject.Inject
 
 /**
- * The downloads list in Compose, inside the medium collapsing app bar every other screen uses.
- * The activity owns the toolbar menu, the selection bar and the dialogs, like the other screens.
+ * The downloads list, rendered in Compose inside the medium collapsing app bar. The activity owns
+ * the toolbar menu, the selection bar and the dialogs.
  */
 @AndroidEntryPoint
 class DownloadsActivity : BaseActivity<ActivityDownloadsBinding>() {
@@ -103,7 +103,7 @@ class DownloadsActivity : BaseActivity<ActivityDownloadsBinding>() {
 		lifecycleScope.launch {
 			repeatOnLifecycle(Lifecycle.State.STARTED) {
 				launch { snapshotFlow { selection.value }.collect(::onSelectionChanged) }
-				// The toolbar menu shows the sort and hides what does not apply right now
+				// Rebuild the toolbar menu when the sort or the set of applicable actions changes.
 				launch {
 					combine(
 						viewModel.sort,

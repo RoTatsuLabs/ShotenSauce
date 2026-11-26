@@ -35,7 +35,7 @@ class ListConfigViewModel @Inject constructor(
 			}
 		}
 
-	/** Only the source lists can leave favourites out. */
+	/** Only the General section can hide favourites. */
 	val isHideFavouritesSupported: Boolean
 		get() = section == ListConfigSection.General
 

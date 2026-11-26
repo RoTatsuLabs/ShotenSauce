@@ -11,9 +11,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * The single Rich Presence session of the app. Readers come and go (each reader screen has its
- * own `DiscordRpc`), so the connection, the elapsed-time counter and the delayed teardown live in
- * one place. See [DiscordPresenceController] for the rules.
+ * The single Rich Presence session of the app. Each reader screen has its own `DiscordRpc`, so the
+ * connection, the elapsed-time counter and the delayed teardown live here instead. See
+ * [DiscordPresenceController] for the rules.
  */
 @Singleton
 class DiscordRpcSession @Inject constructor(
@@ -53,7 +53,6 @@ class DiscordRpcSession @Inject constructor(
 	fun stop(owner: Any) = controller.stop(owner)
 }
 
-/** Talks to Discord through the Social SDK. */
 private class SdkDiscordTransport(
 	private val context: Context,
 	private val auth: DiscordAuth,

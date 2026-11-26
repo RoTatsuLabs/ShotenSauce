@@ -130,10 +130,9 @@ abstract class BaseActivity<B : ViewBinding> :
 	}
 
 	/**
-	 * When this activity is being recreated in place by a theme/colour-scheme change there is no
-	 * enter transition, so the freshly-inflated toolbar visibly settles (the back button and title
-	 * reflow into place). Fade the whole window in briefly to mask that one-off jank. Normal
-	 * navigation and configuration changes (rotation) don't set the flag, so they're unaffected.
+	 * Fades the window in after the activity is recreated in place by a theme or colour-scheme change.
+	 * That recreation has no enter transition, so the toolbar would visibly settle (back button and
+	 * title reflow). Navigation and rotation do not set the flag, so they are unaffected.
 	 */
 	private fun maybePlayRecreateFadeIn() {
 		if (!ActivityRecreationHandle.isAnimatedRecreateInProgress) {

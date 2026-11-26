@@ -1297,7 +1297,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		remove(KEY_DISCORD_USER_NAME)
 	}
 
-	/** Drops the user token that the removed token-based login used to keep. */
+	/** Removes the user token stored by the removed token-based login. */
 	fun clearLegacyDiscordToken() {
 		if (prefs.contains(KEY_DISCORD_TOKEN_LEGACY)) {
 			prefs.edit { remove(KEY_DISCORD_TOKEN_LEGACY) }
@@ -1380,8 +1380,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		}
 
 	/**
-	 * How often the backup goes to Telegram, which is set apart from the device backup. Until it is
-	 * picked, it follows the device backup frequency, as it did before the two were separated.
+	 * How often the backup goes to Telegram. Follows the device backup frequency until it is set.
 	 */
 	val telegramBackupFrequencyMillis: Long
 		get() {
@@ -1829,7 +1828,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_DISCORD_TOKEN_EXPIRES_AT = "discord_token_expires_at"
 		const val KEY_DISCORD_USER_NAME = "discord_user_name"
 
-		/** The user token kept by the removed token login. Only used to wipe and never restore it. */
+		/** Key of the user token the removed token login stored. Only ever cleared, never read. */
 		private const val KEY_DISCORD_TOKEN_LEGACY = "discord_token"
 		const val KEY_ONBOARDING_COMPLETED = "onboarding_completed"
 		const val KEY_ONBOARDING_INSTALL_ID = "onboarding_install_id"

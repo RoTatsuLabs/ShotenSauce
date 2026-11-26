@@ -36,7 +36,7 @@ import org.koitharu.kotatsu.core.util.ext.consume
 import org.koitharu.kotatsu.databinding.SheetSortOrderBinding
 import org.koitharu.kotatsu.settings.compose.DropSauceTheme
 
-/** Picks the colour label for the selected bookmarks. Reports the choice through a fragment result. */
+/** Lets the user pick a colour label for the selected bookmarks. The choice is reported through a fragment result. */
 @AndroidEntryPoint
 class BookmarkColorSheet : BaseAdaptiveSheet<SheetSortOrderBinding>() {
 
