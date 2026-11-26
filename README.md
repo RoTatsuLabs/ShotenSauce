@@ -50,7 +50,7 @@ It is a personal fork of [DropSauce](https://github.com/HuzaifaKhalid1311/DropSa
 > [!NOTE]
 > This app code is mostly written with AI assistance (Claude), directed and reviewed by me. If you are not comfortable with that, this project may not be for you.
 
-## Screenshots
+## Highlights
 
 <p align="center">
   <img src="assets/app-features.png" alt="ShotenSauce features" width="100%" />
