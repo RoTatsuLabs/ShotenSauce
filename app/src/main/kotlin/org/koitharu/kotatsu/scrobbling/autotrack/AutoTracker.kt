@@ -81,16 +81,18 @@ class AutoTracker @Inject constructor(
 	/**
 	 * The titles still waiting for a manual pick. Ones that were linked by hand since, or are no
 	 * longer favourites, are dropped from the list here, so it always shows only what is really left.
+	 * Titles for a tracker the user is logged out of are hidden, and come back if they log in again.
 	 */
 	suspend fun pendingReview(): List<Pair<Long, ScrobblerService>> {
 		val items = store.reviewItems()
 		if (items.isEmpty()) return emptyList()
 		val favourites = db.getFavouritesDao().findMangaIds().toHashSet()
+		val enabled = enabledScrobblers.map { it.scrobblerService }.toSet()
 		val tracked = HashMap<Int, Set<Long>>()
 		val result = ArrayList<Pair<Long, ScrobblerService>>(items.size)
 		for ((mangaId, serviceId) in items) {
 			val service = ScrobblerService.entries.firstOrNull { it.id == serviceId }
-			if (service == null) continue
+			if (service == null || service !in enabled) continue
 			val linked = tracked.getOrPut(serviceId) { db.getScrobblingDao().findMangaIds(serviceId).toHashSet() }
 			if (mangaId in linked || mangaId !in favourites) {
 				store.removeReview(mangaId, service)
