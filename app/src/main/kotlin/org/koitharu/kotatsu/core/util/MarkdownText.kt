@@ -23,7 +23,15 @@ private val TRAILING_SPACES = Regex("""(?m)[ \t]+$""")
  * because an edited description is shown as plain text and would otherwise keep every `**` and `[](...)`.
  * Links keep their address in brackets: `[Site](https://a.b)` becomes `Site (https://a.b)`.
  */
-fun String.markdownToPlainText(): String {
+fun String.markdownToPlainText(): String = stripMarkdown(keepStyles = false)
+
+/**
+ * Like [markdownToPlainText], but keeps what a description can show: bold, italic, strikethrough
+ * and links stay as Markdown (`**bold**`, `*italic*`, `~~strike~~`, `[text](url)`), everything else is flattened.
+ */
+fun String.markdownToDescription(): String = stripMarkdown(keepStyles = true)
+
+private fun String.stripMarkdown(keepStyles: Boolean): String {
 	var text = replace("\r\n", "\n").replace('\r', '\n')
 	text = LINE_BREAK_TAG.replace(text, "\n")
 	text = ANY_TAG.replace(text, "")
@@ -31,17 +39,22 @@ fun String.markdownToPlainText(): String {
 	text = LINK.replace(text) {
 		val label = it.groupValues[1].trim()
 		val url = it.groupValues[2]
-		if (label == url || label.isEmpty()) url else "$label ($url)"
+		when {
+			label == url || label.isEmpty() -> url
+			keepStyles -> "[$label]($url)"
+			else -> "$label ($url)"
+		}
 	}
 	text = RULE.replace(text, "")
 	text = HEADING.replace(text, "")
 	text = QUOTE.replace(text, "")
 	text = LIST_ITEM.replace(text, "• ")
-	text = BOLD_STAR.replace(text) { it.groupValues[1] }
-	text = BOLD_UNDER.replace(text) { it.groupValues[1] }
-	text = ITALIC_STAR.replace(text) { it.groupValues[1] }
-	text = ITALIC_UNDER.replace(text) { it.groupValues[1] }
-	text = STRIKE.replace(text) { it.groupValues[1] }
+	// trackers write __bold__ and _italic_, a description writes ** and *, and keeps __ for underline
+	text = BOLD_STAR.replace(text) { if (keepStyles) "**${it.groupValues[1]}**" else it.groupValues[1] }
+	text = BOLD_UNDER.replace(text) { if (keepStyles) "**${it.groupValues[1]}**" else it.groupValues[1] }
+	text = ITALIC_STAR.replace(text) { if (keepStyles) "*${it.groupValues[1]}*" else it.groupValues[1] }
+	text = ITALIC_UNDER.replace(text) { if (keepStyles) "*${it.groupValues[1]}*" else it.groupValues[1] }
+	text = STRIKE.replace(text) { if (keepStyles) "~~${it.groupValues[1]}~~" else it.groupValues[1] }
 	text = SPOILER.replace(text) { it.groupValues[1] }
 	text = CODE.replace(text) { it.groupValues[1] }
 	text = text.replace("&nbsp;", " ").replace("&lt;", "<").replace("&gt;", ">")

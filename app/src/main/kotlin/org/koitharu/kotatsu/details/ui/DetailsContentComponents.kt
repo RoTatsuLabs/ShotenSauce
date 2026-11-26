@@ -272,7 +272,7 @@ internal fun DescriptionCard(
 // strike/links) onto an AnnotatedString. Links become tappable via LinkAnnotation.
 private fun CharSequence.toAnnotatedString(linkColor: Color, linksClickable: Boolean): AnnotatedString {
 	val trimmed = trim()
-	if (trimmed !is Spanned) return AnnotatedString(trimmed.toString())
+	if (trimmed !is Spanned) return trimmed.toString().markdownToAnnotated(linkColor, linksClickable)
 	return buildAnnotatedString {
 		append(trimmed.toString())
 		for (span in trimmed.getSpans(0, trimmed.length, Any::class.java)) {

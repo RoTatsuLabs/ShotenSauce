@@ -28,7 +28,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.ui.BaseActivity
 import org.koitharu.kotatsu.core.ui.dialog.showTextInputDialog
-import org.koitharu.kotatsu.core.util.markdownToPlainText
+import org.koitharu.kotatsu.core.util.markdownToDescription
 import org.koitharu.kotatsu.core.util.ext.end
 import org.koitharu.kotatsu.core.util.ext.getDisplayMessage
 import org.koitharu.kotatsu.core.util.ext.isHttpUrl
@@ -208,7 +208,7 @@ class OverrideConfigActivity : BaseActivity<ActivityOverrideEditBinding>(), Acti
 		var changed = false
 		val sourceDescription = manga?.description?.parseAsHtml()?.toString()?.trim().orEmpty()
 		val baseDescription = description.ifBlank { sourceDescription }
-		val imported = tracker.description?.toString().orEmpty().markdownToPlainText()
+		val imported = tracker.description?.toString().orEmpty().markdownToDescription()
 		val descriptionMode = mode(ImportField.DESCRIPTION)
 		descriptionMode?.let {
 			val result = when (it) {
