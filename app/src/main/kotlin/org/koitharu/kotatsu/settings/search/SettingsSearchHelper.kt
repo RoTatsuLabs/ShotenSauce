@@ -15,6 +15,7 @@ import org.koitharu.kotatsu.settings.DownloadsSettingsFragment
 import org.koitharu.kotatsu.settings.ProxySettingsFragment
 import org.koitharu.kotatsu.settings.ReaderSettingsFragment
 import org.koitharu.kotatsu.settings.ServicesSettingsFragment
+import org.koitharu.kotatsu.settings.tracking.SmartStatusSettingsFragment
 import org.koitharu.kotatsu.settings.StorageAndNetworkSettingsFragment
 import org.koitharu.kotatsu.settings.SuggestionsSettingsFragment
 import org.koitharu.kotatsu.settings.about.AboutSettingsFragment
@@ -318,6 +319,9 @@ class SettingsSearchHelper @Inject constructor(
 			}
 			group(sectionCrumbs, ctx.getString(R.string.tracking)) { crumbs ->
 				addItem(AppSettings.KEY_SCROBBLING_PROGRESS_SYNC, R.string.sync_progress_from_tracking, R.string.sync_progress_from_tracking_summary, crumbs, ServicesSettingsFragment::class.java)
+				addItem("smart_reading_status", R.string.smart_reading_status, R.string.smart_reading_status_summary, crumbs + ctx.getString(R.string.tracking_options), SmartStatusSettingsFragment::class.java)
+				addItem(AppSettings.KEY_SMART_COMPLETION, R.string.smart_status_complete, R.string.smart_status_complete_summary, crumbs + ctx.getString(R.string.smart_reading_status), SmartStatusSettingsFragment::class.java)
+				addItem(AppSettings.KEY_SMART_ASK, R.string.smart_status_ask, R.string.smart_status_ask_summary, crumbs + ctx.getString(R.string.smart_reading_status), SmartStatusSettingsFragment::class.java)
 				addItem("anilist", R.string.anilist, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
 				addItem("kitsu", R.string.kitsu, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)
 				addItem("mal", R.string.mal, breadcrumbs = crumbs, fragmentClass = ServicesSettingsFragment::class.java)

@@ -20,20 +20,23 @@ class SmartStatusTest {
 		lastLocal: Int = 100,
 		localFinished: Boolean = false,
 		localOngoing: Boolean = false,
-		smart: Boolean = true,
-	) = SmartStatus.next(current, chapter, previous, total, lastLocal, localFinished, localOngoing, smart)
+		rules: SmartRules = SmartRules(),
+	) = SmartStatus.next(current, chapter, previous, total, lastLocal, localFinished, localOngoing, rules)
+
+	private val off = SmartRules(startReading = false, resumePaused = false, resumeDropped = false, reRead = false, complete = SmartCompletion.OFF)
 
 	@Test
 	fun plannedBecomesReading() {
 		assertEquals(READING, next(PLANNED, chapter = 1))
-		assertEquals(READING, next(PLANNED, chapter = 1, smart = false))
+		assertNull(next(PLANNED, chapter = 1, rules = off))
 	}
 
 	@Test
-	fun pausedOrDroppedResumeOnlyWhenSmart() {
+	fun pausedResumesAndDroppedStaysByDefault() {
 		assertEquals(READING, next(ON_HOLD, chapter = 6, previous = 5))
-		assertEquals(READING, next(DROPPED, chapter = 6, previous = 5))
-		assertNull(next(ON_HOLD, chapter = 6, previous = 5, smart = false))
+		assertNull(next(DROPPED, chapter = 6, previous = 5))
+		assertEquals(READING, next(DROPPED, chapter = 6, previous = 5, rules = SmartRules(resumeDropped = true)))
+		assertNull(next(ON_HOLD, chapter = 6, previous = 5, rules = off))
 		assertNull(next(ON_HOLD, chapter = 5, previous = 5))
 	}
 
@@ -43,7 +46,14 @@ class SmartStatusTest {
 		assertEquals(COMPLETED, next(RE_READING, chapter = 50, previous = 49, total = 50))
 		assertEquals(COMPLETED, next(PLANNED, chapter = 1, total = 1))
 		assertNull(next(READING, chapter = 49, previous = 48, total = 50))
-		assertNull(next(READING, chapter = 50, previous = 49, total = 50, smart = false))
+		assertNull(next(READING, chapter = 50, previous = 49, total = 50, rules = off))
+	}
+
+	@Test
+	fun sourceOnlyIgnoresTrackerTotal() {
+		val source = SmartRules(complete = SmartCompletion.SOURCE_ONLY)
+		assertNull(next(READING, chapter = 50, previous = 49, total = 50, rules = source))
+		assertEquals(COMPLETED, next(READING, chapter = 80, lastLocal = 80, localFinished = true, rules = source))
 	}
 
 	@Test
@@ -56,7 +66,7 @@ class SmartStatusTest {
 	@Test
 	fun startingAFinishedTitleOverIsReReading() {
 		assertEquals(RE_READING, next(COMPLETED, chapter = 1, previous = 50, total = 50))
-		assertNull(next(COMPLETED, chapter = 1, previous = 50, total = 50, smart = false))
+		assertNull(next(COMPLETED, chapter = 1, previous = 50, total = 50, rules = off))
 		assertNull(next(COMPLETED, chapter = 20, previous = 50, total = 50))
 		assertNull(next(COMPLETED, chapter = 1, previous = 1, total = 1))
 	}

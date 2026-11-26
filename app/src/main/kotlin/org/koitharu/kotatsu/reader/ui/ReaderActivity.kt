@@ -70,6 +70,8 @@ import org.koitharu.kotatsu.core.network.BaseHttpClient
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.prefs.ReaderMode
 import org.koitharu.kotatsu.core.prefs.observeAsFlow
+import org.koitharu.kotatsu.scrobbling.common.domain.SmartStatusPrompt
+import org.koitharu.kotatsu.scrobbling.common.domain.SmartStatusPrompts
 import org.koitharu.kotatsu.core.ui.BaseFullscreenActivity
 import org.koitharu.kotatsu.core.ui.util.MenuInvalidator
 import org.koitharu.kotatsu.core.ui.util.magnifyWhilePressed
@@ -265,6 +267,7 @@ class ReaderActivity :
         viewModel.isInfoBarEnabled.observe(this, ::onReaderBarChanged)
         viewModel.isBookmarkAdded.observe(this, MenuInvalidator(this))
         viewModel.isAskingIncognito.observe(this) { if (it) askForIncognitoMode() }
+        SmartStatusPrompts.prompts.observe(this, Lifecycle.State.STARTED, this::askSmartStatus)
         viewModel.onShowToast.observeEvent(this) { msgId ->
             Snackbar.make(viewBinding.container, msgId, Snackbar.LENGTH_SHORT)
                 .setAnchorView(viewBinding.toolbarDocked)
@@ -773,6 +776,25 @@ class ReaderActivity :
                 }
             }
         }
+    }
+
+    private var isAskingSmartStatus = false
+
+    private fun askSmartStatus(prompt: SmartStatusPrompt) {
+        if (isAskingSmartStatus || SmartStatusPrompts.isDeclined(prompt)) return
+        isAskingSmartStatus = true
+        showSmartStatusDialog(
+            activity = this,
+            prompt = prompt,
+            onConfirm = {
+                isAskingSmartStatus = false
+                lifecycleScope.launch { runCatchingCancellable { prompt.apply() }.onFailure { it.printStackTraceDebug() } }
+            },
+            onDecline = {
+                isAskingSmartStatus = false
+                SmartStatusPrompts.decline(prompt)
+            },
+        )
     }
 
     override fun onReaderModeChanged(mode: ReaderMode) {

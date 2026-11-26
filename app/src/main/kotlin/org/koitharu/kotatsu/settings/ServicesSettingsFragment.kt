@@ -188,6 +188,7 @@ private fun ServicesScreen(
 	var relatedManga by rememberBooleanPref(AppSettings.KEY_RELATED_MANGA, true)
 	var statsEnabled by rememberBooleanPref(AppSettings.KEY_STATS_ENABLED, true)
 	var readingTime by rememberBooleanPref(AppSettings.KEY_READING_TIME, true)
+	var syncProgress by rememberBooleanPref(AppSettings.KEY_SCROBBLING_PROGRESS_SYNC, true)
 
 	var eyeReminder by rememberBooleanPref(AppSettings.KEY_EYE_REMINDER, false)
 	var eyeReminderInterval by rememberIntPref(
@@ -301,6 +302,16 @@ private fun ServicesScreen(
 		item {
 			Column {
 				SettingsGroup(title = stringResource(R.string.tracking)) {
+					item { pos ->
+						SwitchSettingsItem(
+							title = stringResource(R.string.sync_progress_from_tracking),
+							subtitle = stringResource(R.string.sync_progress_from_tracking_summary),
+							checked = syncProgress,
+							onCheckedChange = { syncProgress = it },
+							icon = R.drawable.ic_sync_alt,
+							shape = pos.shape,
+						)
+					}
 					item { pos ->
 						NavigationSettingsItem(
 							title = stringResource(R.string.tracking_options),

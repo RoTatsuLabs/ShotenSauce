@@ -99,6 +99,13 @@ class TrackingSettingsFragment : BaseComposeSettingsFragment(R.string.tracking_o
 							isFromRoot = false,
 						)
 					},
+					onOpenSmartStatus = {
+						(activity as? SettingsActivity)?.openFragment(
+							SmartStatusSettingsFragment::class.java,
+							null,
+							isFromRoot = false,
+						)
+					},
 					onOpenReview = {
 						(activity as? SettingsActivity)?.openFragment(
 							TrackReviewFragment::class.java,
@@ -198,11 +205,10 @@ private fun TrackingScreen(
 	onTrackUntracked: () -> Unit,
 	onCancelTrack: () -> Unit,
 	onOpenSmartCategories: () -> Unit,
+	onOpenSmartStatus: () -> Unit,
 	onOpenReview: () -> Unit,
 ) {
 	var autoTrack by rememberBooleanPref(AppSettings.KEY_AUTO_TRACK_FAVOURITES, false)
-	var syncProgress by rememberBooleanPref(AppSettings.KEY_SCROBBLING_PROGRESS_SYNC, true)
-	var smartStatus by rememberBooleanPref(AppSettings.KEY_SMART_READING_STATUS, true)
 	var autoPause by rememberBooleanPref(AppSettings.KEY_AUTO_PAUSE_STALE, false)
 	var autoPauseDays by rememberIntPref(AppSettings.KEY_AUTO_PAUSE_DAYS, AppSettings.AUTO_PAUSE_DEFAULT_DAYS)
 	val dialogContext = LocalContext.current
@@ -242,23 +248,12 @@ private fun TrackingScreen(
 		item {
 			SettingsGroup(title = stringResource(R.string.tracking_section_progress)) {
 				item { pos ->
-					SwitchSettingsItem(
-						title = stringResource(R.string.sync_progress_from_tracking),
-						subtitle = stringResource(R.string.sync_progress_from_tracking_summary),
-						checked = syncProgress,
-						onCheckedChange = { syncProgress = it },
-						icon = R.drawable.ic_sync_alt,
-						shape = pos.shape,
-					)
-				}
-				item { pos ->
-					SwitchSettingsItem(
+					NavigationSettingsItem(
 						title = stringResource(R.string.smart_reading_status),
 						subtitle = stringResource(R.string.smart_reading_status_summary),
-						checked = smartStatus,
-						onCheckedChange = { smartStatus = it },
 						icon = R.drawable.ic_eye_check,
 						shape = pos.shape,
+						onClick = onOpenSmartStatus,
 					)
 				}
 				item { pos ->

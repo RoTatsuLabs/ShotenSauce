@@ -93,7 +93,8 @@ abstract class Scrobbler(
 		return true
 	}
 
-	suspend fun scrobble(manga: Manga, chapterId: Long) {
+	/** [askFirst] lets the user confirm a status change the rules want to make, when they chose to be asked. */
+	suspend fun scrobble(manga: Manga, chapterId: Long, askFirst: Boolean = false) {
 		var chapters = manga.chapters
 		if (chapters.isNullOrEmpty()) {
 			chapters = mangaRepositoryFactory.create(manga.source).getDetails(manga).chapters
@@ -107,12 +108,11 @@ abstract class Scrobbler(
 		val number = chapter.trackerProgress(chapters.filter { x -> x.branch == chapter.branch })
 		val entity = db.getScrobblingDao().find(scrobblerService.id, manga.id) ?: return
 		repository.updateRate(entity.id, entity.mangaId, number)
-		// Reading a chapter means it is no longer merely "planned", and no tracker flips that for us.
-		// With smart status on, reading also resumes a paused or dropped title and completes one when
-		// its last chapter is read. A status the user set that reading does not contradict survives.
+		// A status the user set that reading does not contradict survives; see [SmartRules].
 		val current = statuses.findKeyByValue(entity.status)
-		val smart = settings.isSmartReadingStatus
-		val needsTotal = smart && current != null && current != ScrobblingStatus.COMPLETED
+		val rules = settings.smartStatusRules
+		val needsTotal = rules.complete == SmartCompletion.TRACKER_OR_SOURCE &&
+			current != null && current != ScrobblingStatus.COMPLETED
 		val total = if (needsTotal) infoOrNull(entity.targetId)?.totalChapters ?: 0 else 0
 		val branchChapters = chapters.filter { x -> x.branch == chapter.branch }
 		val lastLocal = branchChapters.lastOrNull()?.trackerProgress(branchChapters) ?: 0
@@ -125,9 +125,20 @@ abstract class Scrobbler(
 			localFinished = manga.state == MangaState.FINISHED,
 			localOngoing = manga.state == MangaState.ONGOING || manga.state == MangaState.PAUSED ||
 				manga.state == MangaState.UPCOMING,
-			smart = smart,
+			rules = rules,
 		)
-		if (next != null) {
+		if (next == null) return
+		if (askFirst && rules.askFirst) {
+			SmartStatusPrompts.offer(
+				SmartStatusPrompt(
+					mangaId = manga.id,
+					title = manga.title,
+					service = scrobblerService,
+					status = next,
+					apply = { updateScrobblingInfo(manga.id, entity.rating, next, entity.comment) },
+				),
+			)
+		} else {
 			updateScrobblingInfo(manga.id, entity.rating, next, entity.comment)
 		}
 	}
@@ -260,7 +271,7 @@ abstract class Scrobbler(
 
 suspend fun Scrobbler.tryScrobble(manga: Manga, chapterId: Long): Boolean {
 	return runCatchingCancellable {
-		scrobble(manga, chapterId)
+		scrobble(manga, chapterId, askFirst = true)
 	}.onFailure {
 		it.printStackTraceDebug()
 	}.isSuccess

@@ -1,5 +1,7 @@
 package org.koitharu.kotatsu.core.prefs
 
+import org.koitharu.kotatsu.scrobbling.common.domain.SmartCompletion
+import org.koitharu.kotatsu.scrobbling.common.domain.SmartRules
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingStatus
 import android.content.Context
 import android.content.SharedPreferences
@@ -1434,10 +1436,23 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		putLong(smartCategoryKey(status), categoryId)
 	}
 
-	/** Moves a title's tracker status (reading, on hold, completed) on its own as it is read. */
-	var isSmartReadingStatus: Boolean
-		get() = prefs.getBoolean(KEY_SMART_READING_STATUS, true)
-		set(value) = prefs.edit { putBoolean(KEY_SMART_READING_STATUS, value) }
+	/**
+	 * The status changes reading may make on a title's tracker entry. Rules that were never set follow
+	 * the old single "smart reading status" switch, so turning that off stays honoured.
+	 */
+	val smartStatusRules: SmartRules
+		get() {
+			val legacyOn = prefs.getBoolean(KEY_SMART_READING_STATUS, true)
+			val completion = prefs.getInt(KEY_SMART_COMPLETION, if (legacyOn) SmartCompletion.TRACKER_OR_SOURCE.ordinal else 0)
+			return SmartRules(
+				startReading = prefs.getBoolean(KEY_SMART_START_READING, true),
+				resumePaused = prefs.getBoolean(KEY_SMART_RESUME_PAUSED, legacyOn),
+				resumeDropped = prefs.getBoolean(KEY_SMART_RESUME_DROPPED, false),
+				reRead = prefs.getBoolean(KEY_SMART_REREAD, legacyOn),
+				complete = SmartCompletion.entries.getOrElse(completion) { SmartCompletion.OFF },
+				askFirst = prefs.getBoolean(KEY_SMART_ASK, false),
+			)
+		}
 
 	/** Marks Reading titles on the trackers as On hold once they have not been read for [autoPauseDays]. */
 	var isAutoPauseStale: Boolean
@@ -1949,7 +1964,14 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_AUTO_TRACK_FAVOURITES = "auto_track_favourites"
 		const val KEY_SMART_CATEGORIES = "smart_categories"
 		fun smartCategoryKey(status: ScrobblingStatus) = "smart_category_" + status.name.lowercase()
+		/** The old single switch; only read to give the separate rules below their first values. */
 		const val KEY_SMART_READING_STATUS = "smart_reading_status"
+		const val KEY_SMART_START_READING = "smart_status_start_reading"
+		const val KEY_SMART_RESUME_PAUSED = "smart_status_resume_paused"
+		const val KEY_SMART_RESUME_DROPPED = "smart_status_resume_dropped"
+		const val KEY_SMART_REREAD = "smart_status_reread"
+		const val KEY_SMART_COMPLETION = "smart_status_completion"
+		const val KEY_SMART_ASK = "smart_status_ask"
 		const val KEY_AUTO_PAUSE_STALE = "auto_pause_stale"
 		const val KEY_AUTO_PAUSE_DAYS = "auto_pause_days"
 		const val AUTO_PAUSE_DEFAULT_DAYS = 60
