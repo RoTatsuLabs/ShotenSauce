@@ -1,6 +1,7 @@
 package org.koitharu.kotatsu.scrobbling.comick.data
 
 import android.content.Context
+import dagger.Lazy
 import dagger.hilt.android.qualifiers.ApplicationContext
 import okhttp3.FormBody
 import okhttp3.HttpUrl.Companion.toHttpUrl
@@ -15,19 +16,27 @@ import org.koitharu.kotatsu.parsers.util.await
 import org.koitharu.kotatsu.parsers.util.json.getStringOrNull
 import org.koitharu.kotatsu.parsers.util.json.mapJSONNotNull
 import org.koitharu.kotatsu.parsers.util.parseJson
+import org.koitharu.kotatsu.parsers.util.runCatchingCancellable
+import org.koitharu.kotatsu.scrobbling.anilist.data.AniListRepository
 import org.koitharu.kotatsu.scrobbling.common.data.ScrobblerRepository
 import org.koitharu.kotatsu.scrobbling.common.data.ScrobblerStorage
 import org.koitharu.kotatsu.scrobbling.common.data.ScrobblingEntity
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerManga
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerMangaInfo
+import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerMangaStatus
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerMangaType
+import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerTitleType
+import org.koitharu.kotatsu.scrobbling.common.domain.model.cleanAltNames
+import org.koitharu.kotatsu.scrobbling.common.domain.model.stringList
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerService
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerType
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerUser
+import org.koitharu.kotatsu.scrobbling.mangabaka.data.MangaBakaRepository
 import java.net.HttpURLConnection
 import java.security.MessageDigest
 import java.security.SecureRandom
 import java.util.Base64
+import java.util.Locale
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -51,6 +60,9 @@ class ComickRepository @Inject constructor(
 	@ScrobblerType(ScrobblerService.COMICK) private val okHttp: OkHttpClient,
 	@ScrobblerType(ScrobblerService.COMICK) private val storage: ScrobblerStorage,
 	private val db: MangaDatabase,
+	// Comick has no genres or authors, so they come from the sibling pages its external ids point to
+	private val mangaBaka: Lazy<MangaBakaRepository>,
+	private val aniList: Lazy<AniListRepository>,
 ) : ScrobblerRepository {
 
 	private val clientId = context.getString(R.string.comick_clientId)
@@ -144,6 +156,8 @@ class ComickRepository @Inject constructor(
 				cover = json.getStringOrNull("cover_url"),
 				url = json.getString("url"),
 				isBestMatch = title.equals(query, ignoreCase = true),
+				names = cleanAltNames(title, json.optJSONArray("titles").stringList("title")),
+				country = json.getStringOrNull("country"),
 			)
 		}
 	}
@@ -151,16 +165,60 @@ class ComickRepository @Inject constructor(
 	override suspend fun getMangaInfo(id: Long): ScrobblerMangaInfo {
 		val request = Request.Builder().url("$API_URL/titles/${id.toHid()}").get().build()
 		val json = okHttp.newCall(request).await().parseJson().getJSONObject("data")
-		return ScrobblerMangaInfo(
+		val name = json.getString("title")
+		val info = ScrobblerMangaInfo(
 			id = id,
-			name = json.getString("title"),
+			name = name,
 			cover = json.getStringOrNull("cover_url").orEmpty(),
 			url = json.getString("url"),
 			descriptionHtml = json.getStringOrNull("description").orEmpty(),
 			// Comick doesn't know final chapter counts
 			totalChapters = 0,
+			// the API has no genres or authors, only the names, status, year and score below
+			altNames = cleanAltNames(name, json.optJSONArray("titles").stringList("title")),
+			status = when (json.optInt("status")) {
+				1 -> ScrobblerMangaStatus.ONGOING
+				2 -> ScrobblerMangaStatus.FINISHED
+				3 -> ScrobblerMangaStatus.CANCELLED
+				4 -> ScrobblerMangaStatus.PAUSED
+				else -> null
+			},
+			year = json.optInt("year"),
+			score = json.optDouble("bayesian_rating", 0.0).toFloat().coerceIn(0f, RATING_MAX.toFloat()),
+			type = when (json.getStringOrNull("country")?.lowercase(Locale.ROOT)) {
+				"kr" -> ScrobblerTitleType.MANHWA
+				"cn", "tw", "hk" -> ScrobblerTitleType.MANHUA
+				"jp" -> ScrobblerTitleType.MANGA
+				else -> null
+			},
 		)
+		val ids = json.optJSONObject("external_ids")
+		val extra = ids?.getStringOrNull("mangabaka")?.toLongOrNull()?.let { baka ->
+			runCatchingCancellable { mangaBaka.get().getMangaInfo(baka) }.getOrNull()
+		} ?: ids?.getStringOrNull("anilist")?.toLongOrNull()?.let { list ->
+			runCatchingCancellable { aniList.get().getMangaInfo(list) }.getOrNull()
+		}
+		return if (extra == null) info else info.withDetailsFrom(extra)
 	}
+
+	/** Comick's own names, status, year and score stay; genres, authors and the adult flag are filled in from [other]. */
+	private fun ScrobblerMangaInfo.withDetailsFrom(other: ScrobblerMangaInfo) = ScrobblerMangaInfo(
+		id = id,
+		name = name,
+		// Comick only has a thumbnail, the linked page has the full cover
+		cover = other.cover.ifBlank { cover },
+		url = url,
+		descriptionHtml = descriptionHtml.ifBlank { other.descriptionHtml },
+		totalChapters = totalChapters,
+		genres = other.genres,
+		altNames = cleanAltNames(name, altNames, other.altNames),
+		authors = other.authors,
+		status = status ?: other.status,
+		year = year.takeIf { it > 0 } ?: other.year,
+		score = score.takeIf { it > 0f } ?: other.score,
+		isAdult = other.isAdult,
+		type = type ?: other.type,
+	)
 
 	override suspend fun createRate(mangaId: Long, scrobblerMangaId: Long): Boolean {
 		libraryEntry(scrobblerMangaId)?.let {

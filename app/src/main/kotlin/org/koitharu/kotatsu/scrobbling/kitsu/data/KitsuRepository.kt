@@ -148,7 +148,7 @@ class KitsuRepository(
 		return ScrobblerMangaInfo(
 			id = data.getAsLong("id"),
 			name = name,
-			cover = attrs.getJSONObject("posterImage").getString("medium"),
+			cover = attrs.getJSONObject("posterImage").let { it.getStringOrNull("original") ?: it.getStringOrNull("large") ?: it.getString("medium") },
 			url = "$BASE_WEB_URL/manga/${attrs.getString("slug")}",
 			descriptionHtml = attrs.getString("description").replace("\\n", "<br>"),
 			totalChapters = attrs.optInt("chapterCount"),

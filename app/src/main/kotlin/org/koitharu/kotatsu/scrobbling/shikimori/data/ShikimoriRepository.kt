@@ -256,7 +256,7 @@ class ShikimoriRepository @Inject constructor(
 		return ScrobblerMangaInfo(
 			id = json.getLong("id"),
 			name = name,
-			cover = json.getJSONObject("image").getString("preview").toAbsoluteUrl(DOMAIN),
+			cover = json.getJSONObject("image").let { it.getStringOrNull("original") ?: it.getString("preview") }.toAbsoluteUrl(DOMAIN),
 			url = json.getString("url").toAbsoluteUrl(DOMAIN),
 			descriptionHtml = json.getString("description_html"),
 			totalChapters = json.optInt("chapters"),

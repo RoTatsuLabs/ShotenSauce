@@ -240,7 +240,7 @@ class OverrideConfigActivity : BaseActivity<ActivityOverrideEditBinding>(), Acti
 			genresText.value = mergeList(
 				current = genresText.value,
 				source = manga?.tags?.map { tag -> tag.title }.orEmpty(),
-				imported = tracker.genres,
+				imported = tracker.genres.map(::tidyGenre),
 				mode = it,
 			)
 		}
@@ -269,6 +269,16 @@ class OverrideConfigActivity : BaseActivity<ActivityOverrideEditBinding>(), Acti
 				ratingText.value = "%.1f".format(tracker.score)
 			}
 		}
+	}
+
+	/** Some trackers send genres in lower case ("slice_of_life"); a name that is all lower case gets capital letters. */
+	private fun tidyGenre(genre: String): String {
+		val name = genre.trim().replace('_', ' ')
+		if (name != name.lowercase()) return name
+		val small = setOf("of", "the", "and", "in", "a")
+		return name.split(' ').mapIndexed { i, word ->
+			if (i > 0 && word in small) word else word.replaceFirstChar { it.uppercase() }
+		}.joinToString(" ")
 	}
 
 	private fun parseList(text: String): List<String> =

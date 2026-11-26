@@ -160,7 +160,7 @@ class MangaBakaRepository @Inject constructor(
 		return ScrobblerMangaInfo(
 			id = json.getLong("id"),
 			name = name,
-			cover = json.coverUrl().orEmpty(),
+			cover = json.coverUrlLarge() ?: json.coverUrl().orEmpty(),
 			url = "$BASE_WEB_URL/${json.getLong("id")}",
 			descriptionHtml = json.getStringOrNull("description").orEmpty(),
 			totalChapters = json.optInt("total_chapters"),
@@ -341,6 +341,13 @@ class MangaBakaRepository @Inject constructor(
 		?: getStringOrNull("romanized_title")
 		?: getStringOrNull("native_title")
 		?: "#${getLong("id")}"
+
+	/** The biggest cover the API lists, for the title page and for importing; lists keep the small one. */
+	private fun JSONObject.coverUrlLarge(): String? {
+		val cover = optJSONObject("cover") ?: return null
+		return cover.optJSONObject("x350")?.let { it.getStringOrNull("x3") ?: it.getStringOrNull("x2") ?: it.getStringOrNull("x1") }
+			?: cover.optJSONObject("x250")?.let { it.getStringOrNull("x3") ?: it.getStringOrNull("x2") }
+	}
 
 	private fun JSONObject.coverUrl(): String? = optJSONObject("cover")
 		?.optJSONObject("x250")

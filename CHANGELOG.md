@@ -10,6 +10,9 @@
 ### Improved
 - Title details redesigned: cover and title on top with the Favourite button under them, a progress card beside chapters and last update, genres inside the description card, and the Tracking card at the bottom
 - Tracking options: the running "Track untracked favourites" pass has a Cancel button
+- Import from tracker takes the largest cover the tracker has (AniList, Kitsu, Shikimori, MangaBaka, and Comick through its linked page) instead of a small one
+- Descriptions you edit or import from a tracker show bold, italic, underline, strikethrough and links written in Markdown, the same styles an HTML description can show
+- Import from tracker with Comick now brings alternative names, status, year, score and type, and also genres, authors and the adult flag through the MangaBaka or AniList page Comick links to; matching uses its other names
 - Downloads stop retrying dead or forbidden links, spread retries out with a little randomness and check for free space before starting a chapter
 - Bookmarks can be labelled with a colour and filtered by it
 - Smart categories in Tracking options: bind each tracker status to a category and favourites move there when the status changes

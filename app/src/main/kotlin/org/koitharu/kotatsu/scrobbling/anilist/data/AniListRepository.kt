@@ -315,6 +315,7 @@ class AniListRepository @Inject constructor(
 					native
 				}
 				coverImage {
+					extraLarge
 					large
 				}
 				description
@@ -414,7 +415,7 @@ class AniListRepository @Inject constructor(
 		return ScrobblerMangaInfo(
 			id = json.getLong("id"),
 			name = name,
-			cover = json.getJSONObject("coverImage").getString("large"),
+			cover = json.getJSONObject("coverImage").let { it.getStringOrNull("extraLarge") ?: it.getString("large") },
 			url = json.getString("siteUrl"),
 			descriptionHtml = json.getString("description"),
 			totalChapters = json.optInt("chapters"),
