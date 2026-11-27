@@ -128,6 +128,42 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 	override val bottomNav: SlidingBottomNavigationView?
 		get() = viewBinding.bottomNav
 
+	private val tabEdgeSwipe by lazy { TabEdgeSwipe(this, ::dragTab, ::finishTabDrag) }
+
+	/** The tab slides with the finger, with some resistance, as long as there is a neighbour to go to. */
+	private fun dragTab(dx: Float, step: Int) {
+		val view = navigationDelegate.primaryFragment?.view ?: return
+		view.translationX = if (navigationDelegate.hasAdjacent(step)) dx * TAB_DRAG_RESISTANCE else dx * TAB_DRAG_RESISTANCE / 3f
+	}
+
+	private fun finishTabDrag(step: Int, commit: Boolean) {
+		val outgoing = navigationDelegate.primaryFragment?.view ?: return
+		val width = outgoing.width.toFloat()
+		val side = if (outgoing.translationX < 0f) -1f else 1f
+		if (!commit || !navigationDelegate.hasAdjacent(step)) {
+			outgoing.animate().translationX(0f).setDuration(TAB_SETTLE_MS).start()
+			return
+		}
+		outgoing.animate().translationX(side * width).setDuration(TAB_SETTLE_MS).withEndAction {
+			navigationDelegate.selectAdjacent(step, animated = false)
+			outgoing.translationX = 0f
+			navigationDelegate.primaryFragment?.view?.run {
+				translationX = -side * width * 0.25f
+				alpha = 0.4f
+				animate().translationX(0f).alpha(1f).setDuration(TAB_SETTLE_MS).start()
+			}
+		}.start()
+	}
+
+	override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+		tabEdgeSwipe.onTouch(
+			root = viewBinding.root,
+			e = ev,
+			isEnabled = !actionModeDelegate.isActionModeStarted,
+		)
+		return super.dispatchTouchEvent(ev)
+	}
+
 	override val listCheckpointButton: View
 		get() = viewBinding.buttonCheckpoint.root
 
@@ -765,6 +801,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 	}
 
 	private companion object {
+		const val TAB_DRAG_RESISTANCE = 0.6f
+		const val TAB_SETTLE_MS = 160L
 
 		private const val FAB_SHRINK_DELAY_MS = 1500L
 		private const val SECRET_HOLD_MS = 3000L

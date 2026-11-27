@@ -68,6 +68,15 @@ class MainNavigationDelegate(
 
 	var onExploreReselected: (() -> Unit)? = null
 
+	private var suppressTransition = false
+
+	/** Whether the bar has a tab [step] places from the current one. */
+	fun hasAdjacent(step: Int): Boolean {
+		val items = (0 until navBar.menu.size()).map { navBar.menu.getItem(it) }.filter { it.isVisible }
+		val index = items.indexOfFirst { it.itemId == navBar.selectedItemId }
+		return index >= 0 && index + step in items.indices
+	}
+
 	// Tabs are kept alive (see [setPrimaryFragment]); the "primary" one is whichever tab fragment
 	// is currently shown (not hidden). All others stay added but hidden + capped to STARTED.
 	val primaryFragment: Fragment?
@@ -165,6 +174,22 @@ class MainNavigationDelegate(
 
 	fun setCounter(item: NavItem, counter: Int) {
 		setCounter(item.id, counter)
+	}
+
+	/** Opens the tab [step] places from the current one in the bar; false when there is none. */
+	fun selectAdjacent(step: Int, animated: Boolean = true): Boolean {
+		val items = (0 until navBar.menu.size()).map { navBar.menu.getItem(it) }.filter { it.isVisible }
+		val index = items.indexOfFirst { it.itemId == navBar.selectedItemId }
+		if (index < 0) return false
+		val target = items.getOrNull(index + step) ?: return false
+		// A swipe that has already slid the page out does not want the usual tab transition on top
+		suppressTransition = !animated
+		try {
+			navBar.selectedItemId = target.itemId
+		} finally {
+			suppressTransition = false
+		}
+		return true
 	}
 
 	fun syncSelectedItem() {
@@ -299,7 +324,7 @@ class MainNavigationDelegate(
 
 	// Content slides along the nav bar's axis, towards where the newly selected item sits.
 	private fun resolveTabTransition(current: Fragment?, @IdRes targetItemId: Int): TabTransition {
-		if (current == null || !navBar.isLaidOut || !navBar.context.isAnimationsEnabled) {
+		if (suppressTransition || current == null || !navBar.isLaidOut || !navBar.context.isAnimationsEnabled) {
 			return TabTransition.NONE
 		}
 		val visibleItems = navBar.menu.iterator().asSequence().filter { it.isVisible }.map { it.itemId }.toList()
