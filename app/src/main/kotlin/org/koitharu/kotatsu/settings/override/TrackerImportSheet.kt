@@ -1,7 +1,7 @@
 package org.koitharu.kotatsu.settings.override
 
+import android.content.Context
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,55 +12,52 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
-import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.SegmentedButton
-import androidx.compose.material3.SegmentedButtonDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Icon
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Surface
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
-import android.content.Context
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.model.titleResId
+import org.koitharu.kotatsu.core.prefs.AppSettings
+import org.koitharu.kotatsu.core.ui.dialog.ExpressivePillButton
 import org.koitharu.kotatsu.core.ui.image.coverBlur
+import org.koitharu.kotatsu.core.util.ext.mangaSourceExtra
 import org.koitharu.kotatsu.parsers.model.ContentRating
+import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaState
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerMangaStatus
-import org.koitharu.kotatsu.core.util.ext.mangaSourceExtra
-import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingInfo
-import androidx.compose.material3.SheetValue
+import org.koitharu.kotatsu.settings.compose.LocalSettingsItemColor
+import org.koitharu.kotatsu.settings.compose.SegmentedRow
+import org.koitharu.kotatsu.settings.compose.SegmentedSettingsItem
+import org.koitharu.kotatsu.settings.compose.SettingsGroup
+import org.koitharu.kotatsu.settings.compose.SettingsItem
+import org.koitharu.kotatsu.settings.compose.SettingsSwitch
+import org.koitharu.kotatsu.settings.compose.rememberIntPref
 
 /** What happens to the editor's current value when a field is imported. */
 enum class ImportMode(val titleResId: Int) {
@@ -82,33 +79,52 @@ enum class ImportField(val titleResId: Int, val modes: List<ImportMode>) {
 	RATING(R.string.rating, listOf(ImportMode.REPLACE, ImportMode.FILL)),
 }
 
+/** What the editor holds now, so the sheet can show what an import would change. */
+class ImportCurrent(val cover: String?, val values: Map<ImportField, String>)
+
+private enum class FieldState { CHANGE, KEPT, SAME }
+
 /**
- * Picks what to pull from a linked tracker: which tracker, then which of its fields. The values
- * only land in the editor's fields, so this sheet never has a destructive outcome — Save does.
- *
- * A field the tracker has nothing for is shown greyed and cannot be picked, which is more honest
- * than hiding it: it explains why the import left that field alone.
+ * Picks what to pull from a linked tracker. Every field is shown as what it is now against what
+ * the tracker has, and only the ones that would change start switched on. The values only land in
+ * the editor's fields, so this sheet never has a destructive outcome: Save does.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TrackerImportSheet(
 	manga: Manga,
 	trackers: List<ScrobblingInfo>,
+	current: ImportCurrent,
 	imageLoader: ImageLoader,
-	onImport: (ScrobblingInfo, Map<ImportField, ImportMode>) -> Unit,
+	onImport: (ScrobblingInfo, Map<ImportField, ImportMode>, String?) -> Unit,
 	onDismiss: () -> Unit,
 ) {
 	if (trackers.isEmpty()) {
 		return
 	}
+	val context = LocalContext.current
 	var selectedTracker by remember { mutableStateOf(trackers.first().scrobbler) }
 	val tracker = trackers.firstOrNull { it.scrobbler == selectedTracker } ?: trackers.first()
-	// Re-seeded per tracker: a field one tracker has nothing for may well be filled on the next.
-	// The choices start from the defaults every time the sheet opens; nothing is remembered.
-	val context = LocalContext.current
-	var selection by remember(tracker) {
-		mutableStateOf(tracker.availableFields(context).associateWith { it.modes.first() })
+	var applyMode by remember { mutableStateOf(ImportMode.FILL) }
+	var quality by rememberIntPref(AppSettings.KEY_IMPORT_COVER_QUALITY, COVER_HIGH)
+	val coverUrl = tracker.coverUrl?.let { if (quality == COVER_STANDARD) it.asStandardCover() else it }
+	val canChooseQuality = tracker.coverUrl?.let { it.asStandardCover() != it } == true
+
+	val states = remember(tracker, applyMode, quality, current) {
+		ImportField.entries.mapNotNull { field ->
+			val value = if (field == ImportField.COVER) coverUrl else tracker.valueOf(field, context)
+			val now = if (field == ImportField.COVER) current.cover else current.values[field]
+			stateOf(field, value, now, applyMode)?.let { field to it }
+		}.toMap()
 	}
+	var selection by remember(states) {
+		mutableStateOf(
+			states.filterValues { it == FieldState.CHANGE }.keys.associateWith { applyMode.forField(it) },
+		)
+	}
+	val changing = ImportField.entries.filter { states[it] == FieldState.CHANGE }
+	val resting = ImportField.entries.filter { states[it] != null && states[it] != FieldState.CHANGE }
+	val missing = ImportField.entries.filter { it !in states }
 
 	ModalBottomSheet(
 		onDismissRequest = onDismiss,
@@ -116,218 +132,240 @@ fun TrackerImportSheet(
 		shape = RoundedCornerShape(topStart = SHEET_CORNER, topEnd = SHEET_CORNER),
 		containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
 	) {
-		val shown = ImportField.entries.filter { it in tracker.availableFields(context) }
-		val missing = ImportField.entries - shown.toSet()
-		Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
-			Text(
-				text = stringResource(R.string.import_from_tracker),
-				style = MaterialTheme.typography.headlineSmall,
-				fontWeight = FontWeight.SemiBold,
-			)
-			Spacer(Modifier.height(4.dp))
-			Text(
-				text = stringResource(R.string.import_from_tracker_hint),
-				style = MaterialTheme.typography.bodyMedium,
-				color = MaterialTheme.colorScheme.onSurfaceVariant,
-			)
-			if (trackers.size > 1) {
+		CompositionLocalProvider(LocalSettingsItemColor provides MaterialTheme.colorScheme.surfaceContainerHigh) {
+			Column(Modifier.padding(start = 20.dp, end = 20.dp, bottom = 24.dp)) {
+				Text(
+					text = stringResource(R.string.import_from_tracker),
+					style = MaterialTheme.typography.headlineSmall,
+					fontWeight = FontWeight.SemiBold,
+				)
 				Spacer(Modifier.height(12.dp))
-				Row(
-					modifier = Modifier.horizontalScroll(rememberScrollState()),
-					horizontalArrangement = Arrangement.spacedBy(8.dp),
+				// Only the list scrolls: the buttons below stay in reach.
+				Column(
+					modifier = Modifier
+						.weight(1f, fill = false)
+						.verticalScroll(rememberScrollState()),
 				) {
-					trackers.forEach { info ->
-						FilterChip(
-							selected = info.scrobbler == tracker.scrobbler,
-							onClick = { selectedTracker = info.scrobbler },
-							label = { Text(stringResource(info.scrobbler.titleResId)) },
-							leadingIcon = {
-								Icon(
-									painter = painterResource(info.scrobbler.iconResId),
-									contentDescription = null,
-									tint = if (info.scrobbler.isBitmapIcon) Color.Unspecified else LocalContentColor.current,
-									modifier = Modifier.size(18.dp),
-								)
-							},
+					if (trackers.size > 1) {
+						SegmentedSettingsItem(
+							title = stringResource(R.string.import_tracker),
+							labels = trackers.map { stringResource(it.scrobbler.titleResId) },
+							selectedIndex = trackers.indexOf(tracker),
+							onSelected = { selectedTracker = trackers[it].scrobbler },
+							shape = RoundedCornerShape(24.dp),
+						)
+						Spacer(Modifier.height(8.dp))
+					}
+					SegmentedSettingsItem(
+						title = stringResource(R.string.import_apply_as),
+						subtitle = stringResource(applyMode.hintResId),
+						labels = ImportMode.entries.map { stringResource(it.titleResId) },
+						selectedIndex = applyMode.ordinal,
+						onSelected = { applyMode = ImportMode.entries[it] },
+						shape = RoundedCornerShape(24.dp),
+					)
+					if (changing.isNotEmpty()) {
+						SettingsGroup(title = stringResource(R.string.import_changes_group, changing.size)) {
+							changing.forEach { field ->
+								item { pos ->
+									FieldRow(
+										manga = manga,
+										field = field,
+										now = if (field == ImportField.COVER) current.cover else current.values[field],
+										value = if (field == ImportField.COVER) coverUrl else tracker.valueOf(field, context),
+										checked = field in selection,
+										onToggle = { on ->
+											selection = if (on) selection + (field to applyMode.forField(field)) else selection - field
+										},
+										imageLoader = imageLoader,
+										shape = pos.shape,
+										below = if (field == ImportField.COVER && canChooseQuality && field in selection) {
+											{
+												SegmentedRow(
+													labels = listOf(
+														stringResource(R.string.import_cover_standard),
+														stringResource(R.string.import_cover_high),
+													),
+													selectedIndex = quality,
+													onSelected = { quality = it },
+													enabled = true,
+												)
+											}
+										} else null,
+									)
+								}
+							}
+						}
+					}
+					if (resting.isNotEmpty()) {
+						SettingsGroup(title = stringResource(R.string.import_resting_group, resting.size)) {
+							resting.forEach { field ->
+								item { pos ->
+									FieldRow(
+										manga = manga,
+										field = field,
+										now = if (states[field] == FieldState.KEPT) {
+											if (field == ImportField.COVER) current.cover else current.values[field]
+										} else null,
+										value = if (field == ImportField.COVER) coverUrl else tracker.valueOf(field, context),
+										checked = field in selection,
+										dimmed = field !in selection,
+										onToggle = { on ->
+											// A kept or identical field only changes when it is replaced outright
+											selection = if (on) selection + (field to field.modes.first()) else selection - field
+										},
+										imageLoader = imageLoader,
+										shape = pos.shape,
+									)
+								}
+							}
+						}
+					}
+					if (missing.isNotEmpty()) {
+						Text(
+							text = stringResource(
+								R.string.import_unavailable,
+								missing.joinToString(", ") { context.getString(it.titleResId) },
+							),
+							style = MaterialTheme.typography.bodySmall,
+							color = MaterialTheme.colorScheme.onSurfaceVariant,
+							modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
 						)
 					}
 				}
-			}
-			Spacer(Modifier.height(12.dp))
-			// Only the list scrolls: the header above and the buttons below stay in reach.
-			Column(
-				modifier = Modifier
-					.weight(1f, fill = false)
-					.verticalScroll(rememberScrollState()),
-				verticalArrangement = Arrangement.spacedBy(2.dp),
-			) {
-				shown.forEachIndexed { index, field ->
-					val isChecked = field in selection
-					FieldRow(
-						manga = manga,
-						field = field,
-						value = tracker.valueOf(field, context),
-						mode = selection[field],
-						onModeChange = { selection = selection + (field to it) },
-						coverUrl = tracker.coverUrl.takeIf { field == ImportField.COVER },
-						isChecked = isChecked,
-						imageLoader = imageLoader,
-						shape = RoundedCornerShape(
-							topStart = if (index == 0) 20.dp else 4.dp,
-							topEnd = if (index == 0) 20.dp else 4.dp,
-							bottomStart = if (index == shown.lastIndex) 20.dp else 4.dp,
-							bottomEnd = if (index == shown.lastIndex) 20.dp else 4.dp,
-						),
-						onToggle = {
-							selection = if (isChecked) selection - field else selection + (field to field.modes.first())
-						},
+				Spacer(Modifier.height(16.dp))
+				Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+					ExpressivePillButton(
+						text = stringResource(android.R.string.cancel),
+						primary = false,
+						modifier = Modifier.weight(1f),
+						onClick = onDismiss,
 					)
-				}
-				if (missing.isNotEmpty()) {
-					Text(
-						text = stringResource(
-							R.string.import_unavailable,
-							missing.joinToString(", ") { context.getString(it.titleResId) },
-						),
-						style = MaterialTheme.typography.bodySmall,
-						color = MaterialTheme.colorScheme.onSurfaceVariant,
-						modifier = Modifier.padding(horizontal = 8.dp, vertical = 12.dp),
+					ExpressivePillButton(
+						text = context.resources.getQuantityString(R.plurals.import_changes, selection.size, selection.size),
+						enabled = selection.isNotEmpty(),
+						modifier = Modifier.weight(2f),
+						onClick = { onImport(tracker, selection, coverUrl) },
 					)
-				}
-			}
-			Spacer(Modifier.height(12.dp))
-			Row(
-				modifier = Modifier.fillMaxWidth(),
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				val allSelected = selection.size == shown.size
-				TextButton(
-					onClick = {
-						selection = if (allSelected) emptyMap() else shown.associateWith { it.modes.first() }
-					},
-				) {
-					Text(stringResource(if (allSelected) R.string.import_select_none else R.string.import_select_all))
-				}
-				Spacer(Modifier.weight(1f))
-				TextButton(onClick = onDismiss) {
-					Text(stringResource(android.R.string.cancel))
-				}
-				Spacer(Modifier.width(8.dp))
-				Button(
-					onClick = { onImport(tracker, selection) },
-					enabled = selection.isNotEmpty(),
-				) {
-					Text(stringResource(R.string.import_count, selection.size))
 				}
 			}
 		}
 	}
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun FieldRow(
 	manga: Manga,
 	field: ImportField,
+	now: String?,
 	value: String?,
-	mode: ImportMode?,
-	onModeChange: (ImportMode) -> Unit,
-	coverUrl: String?,
-	isChecked: Boolean,
+	checked: Boolean,
+	onToggle: (Boolean) -> Unit,
 	imageLoader: ImageLoader,
-	shape: RoundedCornerShape,
-	onToggle: () -> Unit,
+	shape: androidx.compose.ui.graphics.Shape,
+	dimmed: Boolean = false,
+	below: (@Composable () -> Unit)? = null,
 ) {
-	Surface(
+	val muted = MaterialTheme.colorScheme.onSurfaceVariant
+	SettingsItem(
+		title = stringResource(field.titleResId),
 		shape = shape,
-		color = if (isChecked) {
-			MaterialTheme.colorScheme.surfaceContainerHigh
-		} else {
-			MaterialTheme.colorScheme.surfaceContainer
-		},
-		contentColor = MaterialTheme.colorScheme.onSurface,
-	) {
-		Column {
-			Row(
-				modifier = Modifier
-					.clickable(onClick = onToggle)
-					.fillMaxWidth()
-					.padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
-				verticalAlignment = Alignment.CenterVertically,
-			) {
-				if (coverUrl != null) {
-					val context = LocalContext.current
-					AsyncImage(
-						model = remember(coverUrl) {
-							ImageRequest.Builder(context)
-								.data(coverUrl)
-								.crossfade(true)
-								.mangaSourceExtra(manga.source)
-								.build()
-						},
-						imageLoader = imageLoader,
-						contentDescription = null,
-						contentScale = ContentScale.Crop,
-						modifier = Modifier
-							.size(width = 34.dp, height = 48.dp)
-							.clip(RoundedCornerShape(8.dp))
-							.background(MaterialTheme.colorScheme.surfaceContainerHighest)
-							.coverBlur(manga),
-					)
-					Spacer(Modifier.width(12.dp))
+		onClick = { onToggle(!checked) },
+		trailing = { SettingsSwitch(checked = checked, onCheckedChange = onToggle) },
+		below = below,
+		supporting = {
+			if (field == ImportField.COVER) {
+				Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+					if (now != null && now != value) {
+						CoverThumb(manga, now, imageLoader)
+						Text("→", color = MaterialTheme.colorScheme.primary)
+					}
+					CoverThumb(manga, value, imageLoader)
 				}
-				Column(Modifier.weight(1f)) {
+			} else {
+				val shown = if (field == ImportField.ALT_NAMES) stringResource(R.string.alt_names_hint) else value
+				if (!now.isNullOrBlank() && !dimmed) {
 					Text(
-						text = stringResource(field.titleResId),
-						style = MaterialTheme.typography.titleSmall,
+						text = now,
+						style = MaterialTheme.typography.bodySmall,
+						color = muted,
+						textDecoration = TextDecoration.LineThrough,
+						maxLines = 2,
+						overflow = TextOverflow.Ellipsis,
 					)
-					// The cover's thumbnail is its own preview; a raw URL underneath adds nothing.
-					val subtitle = when (field) {
-						ImportField.COVER -> null
-						ImportField.ALT_NAMES -> stringResource(R.string.alt_names_hint)
-						else -> value
-					}
-					if (subtitle != null) {
-						Text(
-							text = subtitle,
-							style = MaterialTheme.typography.bodySmall,
-							color = MaterialTheme.colorScheme.onSurfaceVariant,
-							maxLines = 2,
-							overflow = TextOverflow.Ellipsis,
-						)
-					}
 				}
-				Checkbox(
-					checked = isChecked,
-					onCheckedChange = { onToggle() },
-				)
-			}
-			if (isChecked && mode != null && field.modes.size > 1) {
-				SingleChoiceSegmentedButtonRow(
-					modifier = Modifier
-						.fillMaxWidth()
-						.padding(start = 16.dp, end = 16.dp, bottom = 10.dp),
-				) {
-					field.modes.forEachIndexed { index, option ->
-						SegmentedButton(
-							selected = option == mode,
-							onClick = { onModeChange(option) },
-							shape = SegmentedButtonDefaults.itemShape(index, field.modes.size),
-							modifier = Modifier.height(36.dp),
-							label = {
-								Text(
-									text = stringResource(option.titleResId),
-									style = MaterialTheme.typography.labelMedium,
-									maxLines = 1,
-								)
-							},
-						)
-					}
+				if (shown != null) {
+					Text(
+						text = shown,
+						style = MaterialTheme.typography.bodySmall,
+						color = if (dimmed) muted else MaterialTheme.colorScheme.primary,
+						maxLines = 2,
+						overflow = TextOverflow.Ellipsis,
+					)
+				}
+				if (dimmed && !now.isNullOrBlank()) {
+					Text(
+						text = stringResource(R.string.import_kept, now),
+						style = MaterialTheme.typography.bodySmall,
+						color = muted,
+						maxLines = 1,
+						overflow = TextOverflow.Ellipsis,
+					)
 				}
 			}
-		}
+		},
+	)
+}
+
+@Composable
+private fun CoverThumb(manga: Manga, url: String?, imageLoader: ImageLoader) {
+	val context = LocalContext.current
+	AsyncImage(
+		model = remember(url) {
+			ImageRequest.Builder(context).data(url).crossfade(true).mangaSourceExtra(manga.source).build()
+		},
+		imageLoader = imageLoader,
+		contentDescription = null,
+		contentScale = ContentScale.Crop,
+		modifier = Modifier
+			.size(width = 40.dp, height = 56.dp)
+			.clip(RoundedCornerShape(8.dp))
+			.background(MaterialTheme.colorScheme.surfaceContainerHighest)
+			.coverBlur(manga),
+	)
+}
+
+/**
+ * What an import of [value] over [now] does under [mode]. Null when the tracker has nothing for
+ * the field. A cover is a change whenever it differs: the current one is the source's, not the user's.
+ */
+private fun stateOf(field: ImportField, value: String?, now: String?, mode: ImportMode): FieldState? {
+	if (value.isNullOrBlank()) return null
+	if (now.isNullOrBlank()) return FieldState.CHANGE
+	if (isSame(field, now, value)) return FieldState.SAME
+	return if (mode == ImportMode.FILL && field != ImportField.COVER) FieldState.KEPT else FieldState.CHANGE
+}
+
+private fun isSame(field: ImportField, now: String, value: String): Boolean {
+	fun list(text: String) = text.split(',', '\n').map { it.trim().replace('_', ' ').lowercase() }.filter { it.isNotEmpty() }.toSet()
+	return when (field) {
+		ImportField.GENRES, ImportField.AUTHORS -> list(now) == list(value)
+		else -> now.trim().equals(value.trim(), ignoreCase = true)
 	}
 }
+
+/** The mode a field is imported with when the user picked [this] for the whole import. */
+private fun ImportMode.forField(field: ImportField) = if (this in field.modes) this else field.modes.first()
+
+private val ImportMode.hintResId: Int
+	get() = when (this) {
+		ImportMode.REPLACE -> R.string.import_hint_replace
+		ImportMode.APPEND -> R.string.import_hint_append
+		ImportMode.FILL -> R.string.import_hint_fill
+	}
+
+private const val COVER_STANDARD = 0
+private const val COVER_HIGH = 1
 
 private fun ScrobblingInfo.valueOf(field: ImportField, context: Context): String? = when (field) {
 	ImportField.COVER -> coverUrl

@@ -1476,9 +1476,19 @@
     <string name="alt_names_heading">Nama Alternatif:</string>
     <string name="alt_names_hint">Ditambahkan di akhir deskripsi</string>
     <string name="import_unavailable">Tidak disediakan oleh tracker ini: %s</string>
-    <string name="import_select_all">Pilih semua</string>
-    <string name="import_select_none">Batalkan pilihan</string>
-    <string name="import_count">Impor (%d)</string>
+    <string name="import_tracker">Tracker</string>
+    <string name="import_apply_as">Cara menerapkan</string>
+    <string name="import_hint_replace">Menimpa kolom di bawah dengan nilai dari tracker.</string>
+    <string name="import_hint_append">Menambahkan nilai tracker setelah milikmu. Kolom yang tidak bisa ditambah akan diganti.</string>
+    <string name="import_hint_fill">Hanya mengisi kolom yang kosong. Tulisanmu tidak ditimpa.</string>
+    <string name="import_changes_group">Perubahan · %d</string>
+    <string name="import_resting_group">Tidak berubah · %d</string>
+    <string name="import_cover_standard">Standar</string>
+    <string name="import_cover_high">Tinggi</string>
+    <string name="import_kept">Milikmu tetap: %s</string>
+    <plurals name="import_changes">
+        <item quantity="other">Impor %d perubahan</item>
+    </plurals>
     <string name="import_mode_replace">Ganti</string>
     <string name="import_mode_append">Tambahkan</string>
     <string name="import_mode_fill">Isi jika kosong</string>

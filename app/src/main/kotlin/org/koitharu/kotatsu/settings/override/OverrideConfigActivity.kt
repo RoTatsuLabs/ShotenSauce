@@ -37,7 +37,9 @@ import org.koitharu.kotatsu.core.util.ext.observeEvent
 import org.koitharu.kotatsu.core.util.ext.start
 import org.koitharu.kotatsu.core.util.ext.tryLaunch
 import org.koitharu.kotatsu.databinding.ActivityOverrideEditBinding
+import org.koitharu.kotatsu.core.model.titleResId
 import org.koitharu.kotatsu.parsers.model.ContentRating
+import org.koitharu.kotatsu.parsers.model.Manga
 import org.koitharu.kotatsu.parsers.model.MangaState
 import org.koitharu.kotatsu.picker.ui.PageImagePickContract
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblingInfo
@@ -127,9 +129,10 @@ class OverrideConfigActivity : BaseActivity<ActivityOverrideEditBinding>(), Acti
 						TrackerImportSheet(
 							manga = manga,
 							trackers = trackers,
+							current = importCurrent(manga),
 							imageLoader = coil,
-							onImport = { tracker, modes ->
-								applyImport(tracker, modes)
+							onImport = { tracker, modes, coverUrl ->
+								applyImport(tracker, modes, coverUrl)
 								isImportSheetShown.value = false
 							},
 							onDismiss = { isImportSheetShown.value = false },
@@ -195,11 +198,29 @@ class OverrideConfigActivity : BaseActivity<ActivityOverrideEditBinding>(), Acti
 		else -> super.onOptionsItemSelected(item)
 	}
 
+	/** What the editor shows now, so the import sheet can tell what would change. */
+	private fun importCurrent(manga: Manga): ImportCurrent {
+		val stored = viewModel.data.value?.second
+		val sourceDescription = manga.description?.parseAsHtml()?.toString()?.trim().orEmpty()
+		val rating = ratingText.value.toFloatOrNull()
+			?: manga.rating.takeIf { it >= 0f }?.times(10f)
+		val values = buildMap {
+			put(ImportField.TITLE, titleText.value.orEmpty().ifBlank { manga.title })
+			put(ImportField.DESCRIPTION, descriptionText.value.orEmpty().ifBlank { sourceDescription })
+			put(ImportField.GENRES, genresText.value.ifBlank { manga.tags.joinToString(", ") { it.title } })
+			put(ImportField.AUTHORS, authorsText.value.ifBlank { manga.authors.joinToString(", ") })
+			(stateValue.value ?: manga.state)?.let { put(ImportField.STATUS, getString(it.titleResId)) }
+			(contentRatingValue.value ?: manga.contentRating)?.let { put(ImportField.CONTENT_RATING, getString(it.titleResId)) }
+			rating?.let { put(ImportField.RATING, "%.1f / 10".format(it)) }
+		}
+		return ImportCurrent(cover = stored?.coverUrl ?: manga.coverUrl, values = values)
+	}
+
 	/** Fills the editor with the tracker's values; saving them stays the user's call. */
-	private fun applyImport(tracker: ScrobblingInfo, modes: Map<ImportField, ImportMode>) {
+	private fun applyImport(tracker: ScrobblingInfo, modes: Map<ImportField, ImportMode>, coverUrl: String?) {
 		val manga = viewModel.data.value?.first
 		fun mode(field: ImportField) = modes[field]
-		mode(ImportField.COVER)?.let { viewModel.updateCover(tracker.coverUrl) }
+		mode(ImportField.COVER)?.let { viewModel.updateCover(coverUrl ?: tracker.coverUrl) }
 		mode(ImportField.TITLE)?.let { titleText.value = tracker.title }
 
 		// Description and alternative names share one text. It is only touched when the import really

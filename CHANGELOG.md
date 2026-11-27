@@ -8,6 +8,7 @@
 - Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
 
 ### Improved
+- Import from tracker shows what each field is now against what the tracker has, preselects only real changes, applies them all one way (replace, append or fill), and lets you pick the cover quality
 - Smart reading status has its own screen: choose when titles start, resume or re-read, and how finishing works, with an optional prompt before any change; "Sync progress from tracking services" moved to Services
 - Title details redesigned: cover and title on top with the Favourite button under them, a progress card beside chapters and last update, genres inside the description card, and the Tracking card at the bottom
 - Tracking options: the running "Track untracked favourites" pass has a Cancel button

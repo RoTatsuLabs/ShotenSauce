@@ -1972,6 +1972,7 @@ class AppSettings @Inject constructor(@ApplicationContext context: Context) {
 		const val KEY_SMART_REREAD = "smart_status_reread"
 		const val KEY_SMART_COMPLETION = "smart_status_completion"
 		const val KEY_SMART_ASK = "smart_status_ask"
+		const val KEY_IMPORT_COVER_QUALITY = "import_cover_quality"
 		const val KEY_AUTO_PAUSE_STALE = "auto_pause_stale"
 		const val KEY_AUTO_PAUSE_DAYS = "auto_pause_days"
 		const val AUTO_PAUSE_DEFAULT_DAYS = 60
