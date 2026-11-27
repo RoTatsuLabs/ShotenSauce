@@ -13,6 +13,7 @@ import org.koitharu.kotatsu.core.nav.AppRouter
 import org.koitharu.kotatsu.core.nav.router
 import org.koitharu.kotatsu.core.ui.dialog.showConfirmDialog
 import org.koitharu.kotatsu.core.ui.list.ListSelectionController
+import org.koitharu.kotatsu.core.util.ext.observe
 import org.koitharu.kotatsu.core.util.ext.withArgs
 import org.koitharu.kotatsu.databinding.FragmentListBinding
 import org.koitharu.kotatsu.list.ui.MangaListFragment
@@ -25,7 +26,7 @@ class FavouritesListFragment : MangaListFragment() {
 
 	public override val viewModel by viewModels<FavouritesListViewModel>()
 
-	override val isSwipeRefreshEnabled = false
+	override val isSwipeRefreshEnabled = true
 
 	val categoryId
 		get() = viewModel.categoryId
@@ -33,6 +34,18 @@ class FavouritesListFragment : MangaListFragment() {
 	override fun onViewBindingCreated(binding: FragmentListBinding, savedInstanceState: Bundle?) {
 		super.onViewBindingCreated(binding, savedInstanceState)
 		binding.recyclerView.isVP2BugWorkaroundEnabled = true
+		viewModel.isUpdating.observe(viewLifecycleOwner) {
+			isUpdating = it
+			binding.swipeRefreshLayout.isRefreshing = it
+		}
+	}
+
+	private var isUpdating = false
+
+	override fun onLoadingStateChanged(isLoading: Boolean) {
+		super.onLoadingStateChanged(isLoading)
+		// The list reloads in a blink, the update check takes much longer: the spinner follows the check
+		if (isUpdating) requireViewBinding().swipeRefreshLayout.isRefreshing = true
 	}
 
 	override fun onCreateAdapter() = MangaListAdapter(

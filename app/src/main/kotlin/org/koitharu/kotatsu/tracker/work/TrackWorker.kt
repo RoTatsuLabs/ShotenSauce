@@ -20,6 +20,7 @@ import androidx.work.ForegroundInfo
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.OutOfQuotaPolicy
+import androidx.work.workDataOf
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkInfo
 import androidx.work.WorkManager
@@ -108,7 +109,18 @@ class TrackWorker @AssistedInject constructor(
 			return Result.success()
 		}
 		migrateLegacyDownloadStrategy()
-		val tracks = getTracksUseCase(if (isFullRun) Int.MAX_VALUE else BATCH_SIZE)
+		val categoryId = inputData.getLong(KEY_CATEGORY, NO_CATEGORY)
+		val tracks = if (categoryId == NO_CATEGORY) {
+			getTracksUseCase(if (isFullRun) Int.MAX_VALUE else BATCH_SIZE)
+		} else {
+			// A category refresh checks every title of that category, not just the next batch
+			val ids = (if (categoryId == ALL_CATEGORIES) {
+				favouritesRepository.getAllManga()
+			} else {
+				favouritesRepository.getManga(categoryId)
+			}).mapTo(HashSet()) { it.id }
+			getTracksUseCase(Int.MAX_VALUE).filter { it.manga.id in ids }
+		}
 		if (tracks.isEmpty()) {
 			return Result.success()
 		}
@@ -330,13 +342,15 @@ class TrackWorker @AssistedInject constructor(
 				.any { !it.state.isFinished }
 		}
 
-		fun startNow() {
+		/** Checks every title for new chapters, or only those of the favourites [categoryId] (0 is all of them). */
+		fun startNow(categoryId: Long? = null) {
 			val constraints = Constraints.Builder()
 				.setRequiredNetworkType(NetworkType.CONNECTED)
 				.build()
 			val request = OneTimeWorkRequestBuilder<TrackWorker>()
 				.setConstraints(constraints)
 				.addTag(TAG_ONESHOT)
+				.apply { if (categoryId != null) setInputData(workDataOf(KEY_CATEGORY to categoryId)) }
 				.setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
 				.build()
 			// Unique + KEEP so a double tap (or swipe-refresh + menu) cannot run two full checks at once
@@ -372,6 +386,9 @@ class TrackWorker @AssistedInject constructor(
 		const val WORKER_CHANNEL_ID = "track_worker"
 		const val WORKER_NOTIFICATION_ID = 35
 		const val TAG = "tracking"
+		private const val KEY_CATEGORY = "category"
+		private const val NO_CATEGORY = -1L
+		private const val ALL_CATEGORIES = 0L
 		const val TAG_ONESHOT = TAG_ONESHOT_VALUE
 		const val MAX_PARALLELISM = 6
 		val BATCH_SIZE = if (BuildConfig.DEBUG) 20 else 46

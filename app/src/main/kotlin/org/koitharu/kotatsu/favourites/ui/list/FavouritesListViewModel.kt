@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.plus
+import org.koitharu.kotatsu.tracker.work.TrackWorker
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.nav.AppRouter
 import org.koitharu.kotatsu.core.parser.MangaDataRepository
@@ -62,6 +63,7 @@ class FavouritesListViewModel @Inject constructor(
 	quickFilterFactory: FavoritesListQuickFilter.Factory,
 	private val settings: AppSettings,
 	private val mihonExtensionManager: MihonExtensionManager,
+	private val trackScheduler: TrackWorker.Scheduler,
 	mangaDataRepository: MangaDataRepository,
 	@LocalStorageChanges localStorageChanges: SharedFlow<LocalManga?>,
 ) : MangaListViewModel(settings, mangaDataRepository, localStorageChanges), QuickFilterListener {
@@ -115,8 +117,14 @@ class FavouritesListViewModel @Inject constructor(
 		emit(listOf(it.toErrorState(canRetry = false)))
 	}.stateIn(viewModelScope + Dispatchers.Default, SharingStarted.Eagerly, listOf(LoadingState))
 
+	/** True while the tracker is checking titles for new chapters. */
+	val isUpdating: StateFlow<Boolean> = trackScheduler.observeIsRunning()
+		.stateIn(viewModelScope + Dispatchers.Default, SharingStarted.Eagerly, false)
+
+	/** Pulling the list down checks every title of this category for new chapters. */
 	override fun onRefresh() {
 		refreshTrigger.value = Any()
+		trackScheduler.startNow(categoryId)
 	}
 
 	override fun onRetry() = Unit

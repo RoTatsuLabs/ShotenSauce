@@ -3,6 +3,7 @@
 ## Unreleased
 
 ### New
+- Favourites: pull a category down to check all of its titles for new chapters
 - Personal notes on a title, on their own screen: Markdown like Discord and Telegram (bold, italic, underline, strikethrough, spoilers, code, quotes, lists, checklists), `@ch12` mentions that open the reader, and a compact toolbar
 - Title details show the type (Manga, Manhwa, Manhua, Webtoon...) in an info grid with rating, language and last update, and a card lists every alternative title
 - Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
