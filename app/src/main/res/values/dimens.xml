@@ -31,6 +31,7 @@
 	<dimen name="cover_corner">12dp</dimen>
 	<dimen name="cover_corner_large">16dp</dimen>
 	<dimen name="grid_spacing_outer">2dp</dimen>
+	<dimen name="carousel_tile_width">150dp</dimen>
 	<dimen name="grid_spacing_outer_large">6dp</dimen>
 	<dimen name="grid_spacing_outer_double">4dp</dimen>
 	<dimen name="manga_list_details_item_height">120dp</dimen>
@@ -80,19 +81,17 @@
 	<dimen name="appwidget_corner_radius_background">28dp</dimen>
 
 	<!-- FastScroller -->
-	<dimen name="fastscroll_bubble_radius">44dp</dimen>
-	<dimen name="fastscroll_bubble_size">88dp</dimen>
-	<dimen name="fastscroll_bubble_text_size">48sp</dimen>
-	<dimen name="fastscroll_bubble_padding">16dp</dimen>
+	<dimen name="fastscroll_bubble_height">64dp</dimen>
+	<dimen name="fastscroll_bubble_text_size">32sp</dimen>
+	<dimen name="fastscroll_bubble_padding">20dp</dimen>
 
-	<dimen name="fastscroll_bubble_radius_small">32dp</dimen>
-	<dimen name="fastscroll_bubble_size_small">36dp</dimen>
-	<dimen name="fastscroll_bubble_text_size_small">24sp</dimen>
-	<dimen name="fastscroll_bubble_padding_small">12dp</dimen>
+	<dimen name="fastscroll_bubble_height_small">40dp</dimen>
+	<dimen name="fastscroll_bubble_text_size_small">16sp</dimen>
+	<dimen name="fastscroll_bubble_padding_small">16dp</dimen>
 
 	<dimen name="fastscroll_handle_height">58dp</dimen>
 	<dimen name="fastscroll_handle_width">6dp</dimen>
-	<dimen name="fastscroll_handle_radius">4dp</dimen>
+	<dimen name="fastscroll_handle_width_grabbed">12dp</dimen>
 
 	<dimen name="fastscroll_track_width">1dp</dimen>
 

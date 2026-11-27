@@ -2,14 +2,26 @@
 
 ## Unreleased
 
+## 1.2.0 (2026-11-27)
+
 ### New
 - Favourites: pull a category down to check all of its titles for new chapters
 - Swipe sideways on any main tab to open the neighbouring one, once nothing on screen can still scroll that way, and the page follows your finger
 - Personal notes on a title, on their own screen: Markdown like Discord and Telegram (bold, italic, underline, strikethrough, spoilers, code, quotes, lists, checklists), `@ch12` mentions that open the reader, and a compact toolbar
 - Title details show the type (Manga, Manhwa, Manhua, Webtoon...) in an info grid with rating, language and last update, and a card lists every alternative title
 - Track untracked favourites can be run again any time: also search titles that need review again, or send progress for every favourite again
+- Links in PDFs work: web links open in your browser and contents or footnote links jump to the right page
+- Long-press text in a PDF to copy it, look it up in the dictionary or highlight it, and your highlights show up in your bookmarks (Android 15, or 12 to 14 with recent system updates)
+- PDFs with a table of contents now show their real chapters, and you keep your place
+- Search a PDF's text with the search button at the top of the reader, and the matches get marked on the page
+- Track your reading on Comick, sign in from the services settings
+- Hold a suggestion on Explore to make sure it never gets suggested again
+- Fresh new Explore page: bigger shaped buttons, taller suggestions that loop around endlessly with the title on the cover, a new Manga/Novels switcher, pinned extensions up top, and a button right next to Manage to switch between chips, grid and list
+- New Erza theme, a deep garnet red, at the end of the colour scheme list
+- History got a refresh: tidier date sections (today, yesterday, this week, then by month) with how many you read in each, tap a section to fold it away and the app remembers (or open them all again from the ⋮ menu), and hold one to select everything in it
 
 ### Improved
+- Google Drive sync is removed, with its settings entry, sign-in step in the welcome screen and Google Play Services dependency
 - Import from tracker shows what each field is now against what the tracker has, preselects only real changes, applies them all one way (replace, append or fill), and lets you pick the cover quality
 - Smart reading status has its own screen: choose when titles start, resume or re-read, and how finishing works, with an optional prompt before any change; "Sync progress from tracking services" moved to Services
 - Title details redesigned: cover and title on top with the Favourite button under them, a progress card beside chapters and last update, genres inside the description card, and the Tracking card at the bottom
@@ -40,23 +52,15 @@
 - Tracking settings moved to their own "Tracking options" screen with Progress and Actions sections, and Pause stale titles shows its number of days on the same row
 - The tracker sync report is removed, since progress already follows your reading and refreshes
 - Needs review is a full screen list with covers and full titles, grouped by tracker
-
-### Removed
-- Google Drive sync, with its settings entry, sign-in step in the welcome screen and Google Play Services dependency
-- Links in PDFs work: web links open in your browser and contents or footnote links jump to the right page
-- Long-press text in a PDF to copy it, look it up in the dictionary or highlight it, and your highlights show up in your bookmarks (Android 15, or 12 to 14 with recent system updates)
-- PDFs with a table of contents now show their real chapters, and you keep your place
-- Search a PDF's text with the search button at the top of the reader, and the matches get marked on the page
-- Track your reading on Comick, sign in from the services settings
-- Fresh new Explore page: bigger shaped buttons, taller suggestions with the title on the cover, a new Manga/Novels switcher, pinned extensions up top, and a button right next to Manage to switch between chips, grid and list
-
-### Improved
 - The chapters popup on a manga's page is a lighter colour and opens right under the cover or progress card
 - PDFs stay sharp however far you zoom in
 - Searching a book's text shows the results right in the search popup, with your words highlighted
 - More sensitive tags like self-harm or nudity get the orange warning colour, and harmless ones like sister or scar don't anymore
 - New Static app icon that never changes colour, for launchers that glitch with the themed ones
 - MangaBaka's icon shows in colour in the trackers menu instead of a blank silhouette
+- Option pickers across settings and the reader got the new expressive look, the picked one turns into a pill with a checkmark, and so do the filter chips in history
+- The Expressive theme is now called Dynamic
+- New scrollbar: a thin line that swells into a chunky handle when you grab it, with a rounder label riding on it and a light tick as you pass each section
 
 ### Fixed
 - Newer Keiyoushi extensions like MangaFire no longer fail on a manga's page with a "must not be called concurrently" error
@@ -64,6 +68,9 @@
 - Restoring a Mihon backup brings back the right tracker ratings and statuses
 - Opening a chapter no longer occasionally lands on a neighbouring chapter instead of the one you tapped
 - Changing a cover from the full-screen cover view shows the new one right away
+- Dynamic theme no longer shows black text and icons on some phones like Vivo
+- A crash report no longer pops up again on every start after you copied it
+- Suggestion notifications come one at a time again instead of up to four at once
 - Other small bug fixes
 
 ## 1.1.5 (2026-11-20)

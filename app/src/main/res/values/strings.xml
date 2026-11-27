@@ -333,6 +333,9 @@
     <string name="screenshots_block_nsfw">Block on NSFW</string>
     <string name="screenshots_block_all">Always block</string>
     <string name="suggestions">Suggestions</string>
+    <string name="suggestions_loop">Back to the first suggestion</string>
+    <string name="dont_suggest_again">Don\'t suggest again</string>
+    <string name="suggestion_hidden">Won\'t suggest this again</string>
     <string name="suggestions_enable">Enable suggestions</string>
     <string name="suggestions_summary">Suggest manga based on your preferences</string>
     <string name="suggestions_info">All data is only analyzed locally on this device and never sent anywhere.</string>
@@ -541,7 +544,7 @@
     <string name="language">Language</string>
     <string name="filter_by_language">Filter by language</string>
     <string name="no_extensions_installed">No extensions installed</string>
-    <string name="theme_name_expressive">Expressive</string>
+    <string name="theme_name_expressive">Dynamic</string>
     <string name="app_icon">App icon</string>
     <string name="app_icon_summary">The app will close to change the icon</string>
     <string name="app_icon_follows_theme">Icons follow light and dark mode. Themed also matches your app color, Static never changes</string>
@@ -576,6 +579,7 @@
     <string name="theme_name_rikka">Rikka</string>
     <string name="theme_name_sakura">Sakura</string>
     <string name="theme_name_shana">Shana</string>
+    <string name="theme_name_erza">Erza</string>
     <string name="theme_name_mamimi">Mamimi</string>
     <string name="theme_name_kanade">Kanade</string>
     <string name="nothing_here">There is nothing here</string>
@@ -1649,4 +1653,6 @@
     <string name="notes_group_blocks">Blocks</string>
     <string name="notes_group_insert">Insert</string>
     <string name="notes_chapter_label">Chapter %1$s</string>
+	<string name="deselect_all">Deselect all</string>
+	<string name="expand_all">Expand all</string>
 </resources>

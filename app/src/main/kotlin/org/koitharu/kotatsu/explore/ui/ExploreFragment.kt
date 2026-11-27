@@ -33,6 +33,7 @@ import org.koitharu.kotatsu.core.ui.list.ListSelectionController
 import org.koitharu.kotatsu.core.ui.list.decor.AbstractSelectionItemDecoration
 import org.koitharu.kotatsu.core.ui.util.ReversibleActionObserver
 import org.koitharu.kotatsu.core.util.ext.HapticEffect
+import org.koitharu.kotatsu.core.ui.menu.MenuPopup
 import org.koitharu.kotatsu.core.util.ext.addMenuProvider
 import org.koitharu.kotatsu.core.util.ext.consumeAllSystemBarsInsets
 import org.koitharu.kotatsu.core.util.ext.findAppCompatDelegate
@@ -105,19 +106,22 @@ class ExploreFragment :
 				)
 			}
 		}
-		binding.swipeRefreshLayout.setOnRefreshListener { viewModel.refresh() }
 		addMenuProvider(ExploreMenuProvider(router, ::showLanguageFilterDialog))
+		var seenIds = emptySet<Long>()
 		viewModel.sources.observe(viewLifecycleOwner) { content ->
 			val validIds = buildSet {
 				for (item in content.manga) if (item is MangaSourceItem) add(item.id)
 				for (item in content.novel) if (item is MangaSourceItem) add(item.id)
 			}
-			selectionController?.retainAll(validIds)
+			// Only drops extensions that were listed and went away: a selection restored after the app was
+			// closed in the background can arrive before the extensions finish loading.
+			val controller = selectionController ?: return@observe
+			controller.retainAll(validIds + controller.snapshot().filterNot { it in seenIds })
+			seenIds = seenIds + validIds
 		}
 		viewModel.onError.observeEvent(viewLifecycleOwner, SnackbarErrorObserver(binding.composeView, this))
 		viewModel.onActionDone.observeEvent(viewLifecycleOwner, ReversibleActionObserver(binding.composeView))
 		viewModel.onShowSuggestionsTip.observeEvent(viewLifecycleOwner) { showSuggestionsTip() }
-		viewModel.isLoading.observe(viewLifecycleOwner) { binding.swipeRefreshLayout.isRefreshing = it }
 	}
 
 	override fun onApplyWindowInsets(v: View, insets: WindowInsetsCompat): WindowInsetsCompat {
@@ -158,6 +162,17 @@ class ExploreFragment :
 
 	override fun onMangaClick(manga: Manga) {
 		router.openDetails(manga)
+	}
+
+	override fun onMangaLongClick(manga: Manga, view: View) {
+		val popup = MenuPopup(view)
+		popup.menu.add(R.string.dont_suggest_again).setIcon(R.drawable.ic_dont_suggest)
+		popup.setForceShowIcon(true)
+		popup.setOnMenuItemClickListener {
+			viewModel.hideSuggestion(manga)
+			true
+		}
+		popup.show()
 	}
 
 	override fun onManageClick() {
@@ -271,7 +286,6 @@ class ExploreFragment :
 
 	override fun onSelectionChanged(controller: ListSelectionController, count: Int) {
 		selectedIds.value = controller.peekCheckedIds().toSet()
-		viewBinding?.swipeRefreshLayout?.isEnabled = count == 0
 	}
 
 	override fun onCreateActionMode(

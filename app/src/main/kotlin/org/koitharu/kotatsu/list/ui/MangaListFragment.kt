@@ -76,9 +76,11 @@ abstract class MangaListFragment :
 	@Inject
 	lateinit var settings: AppSettings
 
-	private var listAdapter: MangaListAdapter? = null
+	protected var listAdapter: MangaListAdapter? = null
+		private set
 	private var paginationListener: PaginationScrollListener? = null
-	private var selectionController: ListSelectionController? = null
+	protected var selectionController: ListSelectionController? = null
+		private set
 	private var spanResolver: GridSpanResolver? = null
 	private var checkpoint: ListCheckpoint? = null
 	private val spanSizeLookup = SpanSizeLookup()
@@ -149,6 +151,7 @@ abstract class MangaListFragment :
 					button = (activity as? ListCheckpointOwner)?.listCheckpointButton,
 					onLoadMore = ::onScrolledToEnd,
 					onDisableRequested = ::confirmDisableCheckpoint,
+					onRevealHidden = ::revealCheckpointRow,
 				)
 			}
 		}
@@ -238,6 +241,9 @@ abstract class MangaListFragment :
 		}
 		checkpoint?.onContentChanged()
 	}
+
+	/** Brings a loaded row that's hidden (e.g. in a folded section) back; true if it will show. */
+	protected open fun revealCheckpointRow(mangaId: Long): Boolean = false
 
 	private fun confirmDisableCheckpoint() {
 		checkpoint?.hide()
@@ -426,6 +432,9 @@ abstract class MangaListFragment :
 	}
 
 	override fun onSelectionChanged(controller: ListSelectionController, count: Int) {
+		if (count > 0) {
+			checkpoint?.hide()
+		}
 		viewBinding?.recyclerView?.invalidateItemDecorations()
 	}
 
@@ -438,7 +447,7 @@ abstract class MangaListFragment :
 		requireViewBinding().swipeRefreshLayout.isEnabled = isSwipeRefreshEnabled
 	}
 
-	private fun collectSelectedItems(): Set<Manga> {
+	protected open fun collectSelectedItems(): Set<Manga> {
 		val checkedIds = selectionController?.peekCheckedIds() ?: return emptySet()
 		val items = listAdapter?.items ?: return emptySet()
 		val result = LinkedHashSet<Manga>(checkedIds.size) // keeps on-screen order

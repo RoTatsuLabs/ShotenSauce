@@ -1,13 +1,14 @@
 package org.koitharu.kotatsu.core.ui.list
 
-import android.view.View
-import android.view.animation.OvershootInterpolator
-import androidx.core.view.isVisible
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import org.koitharu.kotatsu.core.prefs.AppSettings
 import org.koitharu.kotatsu.core.ui.BaseListAdapter
-import org.koitharu.kotatsu.core.util.ext.applySystemAnimatorScale
+import org.koitharu.kotatsu.core.util.ext.HapticEffect
+import org.koitharu.kotatsu.core.util.ext.hapticFeedback
+import org.koitharu.kotatsu.list.ui.model.EmptyState
+import org.koitharu.kotatsu.list.ui.model.ErrorState
+import org.koitharu.kotatsu.list.ui.model.LoadingState
 import org.koitharu.kotatsu.list.ui.model.MangaListModel
 
 /**
@@ -30,9 +31,10 @@ class ListCheckpoint(
 ) {
 
 	private var recyclerView: RecyclerView? = null
-	private var button: View? = null
+	private var button: ListCheckpointView? = null
 	private var onDisableRequested: (() -> Unit)? = null
 	private var onLoadMore: (() -> Unit)? = null
+	private var onRevealHidden: ((Long) -> Boolean)? = null
 
 	/** Set while waiting for list content to arrive, so the decision is made on a filled list. */
 	private var isArmed = false
@@ -40,75 +42,99 @@ class ListCheckpoint(
 	/** Non-null while paging towards a tapped checkpoint. */
 	private var pendingTarget: Checkpoint? = null
 	private var pageRequests = 0
-	private var lastItemCount = 0
+	private var lastSnapshot: List<*>? = null
 
 	private val scrollListener = object : RecyclerView.OnScrollListener() {
 		override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
-			if (dy != 0) {
+			if (dy != 0 && pendingTarget == null) {
+				hide()
+			}
+		}
+
+		override fun onScrollStateChanged(rv: RecyclerView, newState: Int) {
+			if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+				pendingTarget = null
 				hide()
 			}
 		}
 	}
 
-	private val hideRunnable = Runnable { hide() }
-
 	fun attach(
 		recyclerView: RecyclerView,
-		button: View?,
+		button: ListCheckpointView?,
 		onLoadMore: () -> Unit,
 		onDisableRequested: () -> Unit,
+		onRevealHidden: (mangaId: Long) -> Boolean,
 	) {
 		this.recyclerView = recyclerView
 		this.button = button
 		this.onLoadMore = onLoadMore
+		this.onRevealHidden = onRevealHidden
 		this.onDisableRequested = onDisableRequested
 	}
 
 	fun detach() {
 		if (isOwner()) {
-			hide()
 			button?.let {
+				it.hide(immediate = true)
 				it.tag = null
-				it.setOnClickListener(null)
-				it.setOnLongClickListener(null)
+				it.onJumpClick = null
+				it.onDisableClick = null
 			}
 		}
 		recyclerView?.removeOnScrollListener(scrollListener)
 		isArmed = false
 		pendingTarget = null
+		lastSnapshot = null
 		button = null
 		recyclerView = null
 	}
 
 	private fun isOwner() = button?.tag === this
 
-	/** Persists the topmost visible row and how far it was scrolled past. */
+	/** Persists the topmost visible manga row and how far it was scrolled past. */
 	fun save() {
 		val rv = recyclerView ?: return
 		val lm = rv.layoutManager as? LinearLayoutManager ?: return
-		val position = lm.findFirstVisibleItemPosition()
-		if (position == RecyclerView.NO_POSITION) {
+		val firstPosition = lm.findFirstVisibleItemPosition()
+		if (firstPosition == RecyclerView.NO_POSITION) {
 			return
 		}
-		val id = (items()?.getOrNull(position) as? MangaListModel)?.id ?: return
-		val offset = (lm.findViewByPosition(position)?.top ?: 0) - rv.paddingTop
-		settings.setListCheckpoint(scope, Checkpoint(id, position, offset).encode())
+		if (firstPosition < MIN_DISTANCE) {
+			settings.setListCheckpoint(scope, "")
+			return
+		}
+		val items = items() ?: return
+		val lastPosition = lm.findLastVisibleItemPosition().coerceAtLeast(firstPosition)
+		var targetPos = -1
+		var targetId = 0L
+		for (pos in firstPosition..lastPosition) {
+			val candidate = items.getOrNull(pos) as? MangaListModel
+			if (candidate != null) {
+				targetPos = pos
+				targetId = candidate.id
+				break
+			}
+		}
+		if (targetPos < 0) {
+			settings.setListCheckpoint(scope, "") // only folded headers on screen: an older spot would mislead
+			return
+		}
+		val offset = (lm.findViewByPosition(targetPos)?.top ?: 0) - rv.paddingTop
+		settings.setListCheckpoint(scope, Checkpoint(targetId, targetPos, offset).encode())
 	}
 
 	fun onResume() {
 		button?.let {
 			it.tag = this
-			it.setOnClickListener { jump() }
-			it.setOnLongClickListener { _ ->
-				onDisableRequested?.invoke()
-				true
-			}
+			it.onJumpClick = ::jump
+			it.onDisableClick = { onDisableRequested?.invoke() }
 			// Whatever the previous screen left on show is not ours to keep.
-			it.animate().cancel()
-			it.isVisible = false
+			it.hide(immediate = true)
 		}
 		isArmed = true
 		pendingTarget = null
+		lastSnapshot = null
 		tryShow()
 	}
 
@@ -129,12 +155,18 @@ class ListCheckpoint(
 			tryShow()
 			return
 		}
-		val count = items()?.size ?: 0
-		if (indexOf(target.mangaId) < 0 && count <= lastItemCount) {
-			pendingTarget = null // the list stopped growing, so the row is simply gone
+		val snapshot = items()
+		if (indexOf(target.mangaId) < 0 && snapshot == lastSnapshot) {
+			// The list stopped growing: the row is gone, unless it was only folded away.
+			if (onRevealHidden?.invoke(target.mangaId) == true) {
+				lastSnapshot = snapshot
+			} else {
+				pendingTarget = null
+				hide()
+			}
 			return
 		}
-		scrollOrLoad(target)
+		scrollOrLoad(target, fromTap = false)
 	}
 
 	private fun tryShow() {
@@ -143,10 +175,12 @@ class ListCheckpoint(
 		}
 		val button = button ?: return
 		val items = items() ?: return
-		if (items.none { it is MangaListModel }) {
+		if (items.isEmpty() || items.any { it is LoadingState }) {
 			return // not loaded yet, stay armed
 		}
 		isArmed = false
+		// No rows at all (empty or error) means nothing to jump to; headers alone are folded rows
+		if (items.any { it is EmptyState || it is ErrorState }) return
 		val checkpoint = checkpoint() ?: return
 		if (!settings.isListCheckpointEnabled || checkpoint.index < MIN_DISTANCE) {
 			return
@@ -156,70 +190,57 @@ class ListCheckpoint(
 		if (loadedAt in 0 until MIN_DISTANCE) {
 			return
 		}
-		button.animate().cancel()
-		button.isVisible = true
-		button.alpha = 0f
-		button.scaleX = 0.85f
-		button.scaleY = 0.85f
-		button.translationY = button.height.toFloat()
-		button.animate()
-			.alpha(1f)
-			.scaleX(1f)
-			.scaleY(1f)
-			.translationY(0f)
-			.setInterpolator(OvershootInterpolator(OVERSHOOT_TENSION))
-			.setDuration(SHOW_DURATION_MS)
-			.applySystemAnimatorScale(button.context)
-			.start()
-		button.removeCallbacks(hideRunnable)
-		button.postDelayed(hideRunnable, AUTO_HIDE_DELAY_MS)
+		button.show()
+		recyclerView?.removeOnScrollListener(scrollListener)
 		recyclerView?.addOnScrollListener(scrollListener)
 	}
 
 	fun hide() {
 		isArmed = false
+		pendingTarget = null
 		recyclerView?.removeOnScrollListener(scrollListener)
-		val button = button ?: return
-		button.removeCallbacks(hideRunnable)
-		if (!button.isVisible) {
-			return
-		}
-		button.animate().cancel()
-		button.animate()
-			.alpha(0f)
-			.scaleX(0.85f)
-			.scaleY(0.85f)
-			.translationY(button.height.toFloat())
-			.setInterpolator(null)
-			.setDuration(HIDE_DURATION_MS)
-			.applySystemAnimatorScale(button.context)
-			.withEndAction { button.isVisible = false }
-			.start()
+		button?.hide()
 	}
 
 	private fun jump() {
-		val checkpoint = checkpoint() ?: return
-		hide()
+		val checkpoint = checkpoint() ?: run {
+			hide()
+			return
+		}
 		pageRequests = 0
-		scrollOrLoad(checkpoint)
+		scrollOrLoad(checkpoint, fromTap = true)
 	}
 
 	/** Scrolls to the checkpoint, pulling in further pages first if it is not loaded yet. */
-	private fun scrollOrLoad(checkpoint: Checkpoint) {
+	private fun scrollOrLoad(checkpoint: Checkpoint, fromTap: Boolean) {
 		val position = indexOf(checkpoint.mangaId)
 		if (position >= 0) {
+			val wasPaging = !fromTap
 			pendingTarget = null
 			(recyclerView?.layoutManager as? LinearLayoutManager)
 				?.scrollToPositionWithOffset(position, checkpoint.offset)
+			if (wasPaging) {
+				recyclerView?.hapticFeedback(HapticEffect.LIGHT_CLICK)
+			}
+			hide()
+			return
+		}
+		if (onRevealHidden?.invoke(checkpoint.mangaId) == true) {
+			pendingTarget = checkpoint // loaded but folded away: scroll once it shows
+			lastSnapshot = items()
+			button?.setTravelling()
 			return
 		}
 		if (pageRequests >= MAX_PAGE_REQUESTS) {
 			pendingTarget = null
+			hide()
 			return
 		}
 		pendingTarget = checkpoint
-		val count = items()?.size ?: 0
-		lastItemCount = count
+		button?.setTravelling()
+		val snapshot = items()
+		val count = snapshot?.size ?: 0
+		lastSnapshot = snapshot
 		pageRequests++
 		// Follow the list down as pages arrive instead of standing still until the row shows up,
 		// so a far-away checkpoint reads as travelling there rather than as a frozen screen.
@@ -248,7 +269,7 @@ class ListCheckpoint(
 		companion object {
 
 			fun parse(raw: String?): Checkpoint? {
-				val parts = raw?.split(':') ?: return null
+				val parts = raw?.lineSequence()?.firstOrNull()?.split(':') ?: return null
 				if (parts.size != 3) {
 					return null
 				}
@@ -267,9 +288,5 @@ class ListCheckpoint(
 
 		/** Bounds how far the list will page itself to reach a checkpoint. */
 		private const val MAX_PAGE_REQUESTS = 48
-		private const val SHOW_DURATION_MS = 300L
-		private const val HIDE_DURATION_MS = 160L
-		private const val AUTO_HIDE_DELAY_MS = 5000L
-		private const val OVERSHOOT_TENSION = 1.6f
 	}
 }

@@ -15,8 +15,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import org.koitharu.kotatsu.core.db.MangaQueryBuilder
 import org.koitharu.kotatsu.core.db.TABLE_HISTORY
+import org.koitharu.kotatsu.core.db.entity.MangaEntity
+import org.koitharu.kotatsu.core.db.entity.MangaTagsEntity
 import org.koitharu.kotatsu.core.db.entity.MangaWithTags
 import org.koitharu.kotatsu.core.db.entity.TagEntity
+import org.koitharu.kotatsu.favourites.data.FavouriteCategoryEntity
+import org.koitharu.kotatsu.favourites.data.FavouriteEntity
 import org.koitharu.kotatsu.list.domain.ListFilterOption
 import org.koitharu.kotatsu.list.domain.ListSortOrder
 import org.koitharu.kotatsu.list.domain.ReadingProgress.Companion.PROGRESS_COMPLETED
@@ -67,6 +71,17 @@ abstract class HistoryDao : MangaQueryBuilder.ConditionCallback {
 			)
 			.groupBy("history.manga_id")
 			.limit(limit)
+			.build(),
+	)
+
+	/** Just the columns the History date sections are built from, for every entry the filters match. */
+	fun observeSectionDates(filterOptions: Set<ListFilterOption>): Flow<List<HistorySectionDates>> = observeSectionDatesImpl(
+		MangaQueryBuilder(TABLE_HISTORY, this)
+			.select("history.created_at, history.updated_at, history.percent")
+			.join("LEFT JOIN manga ON history.manga_id = manga.manga_id")
+			.where("history.deleted_at = 0")
+			.filters(filterOptions)
+			.groupBy("history.manga_id")
 			.build(),
 	)
 
@@ -203,9 +218,14 @@ abstract class HistoryDao : MangaQueryBuilder.ConditionCallback {
 	@Query("UPDATE history SET deleted_at = :deletedAt WHERE deleted_at = 0 AND NOT EXISTS(SELECT * FROM favourites WHERE history.manga_id = favourites.manga_id AND favourites.deleted_at = 0 AND EXISTS(SELECT 1 FROM favourite_categories WHERE favourite_categories.category_id = favourites.category_id AND favourite_categories.deleted_at = 0))")
 	protected abstract suspend fun setDeletedAtNotFavorite(deletedAt: Long)
 
+	// Both watch every table a filter can read (but tracks, rewritten all through a tracker check), so the
+	// filtered list and its section counts stay in sync when a favourite, a tag or a status changes.
 	@Transaction
-	@RawQuery(observedEntities = [HistoryEntity::class])
+	@RawQuery(observedEntities = [HistoryEntity::class, MangaEntity::class, MangaTagsEntity::class, TagEntity::class, FavouriteEntity::class, FavouriteCategoryEntity::class])
 	protected abstract fun observeAllImpl(query: SupportSQLiteQuery): Flow<List<HistoryWithManga>>
+
+	@RawQuery(observedEntities = [HistoryEntity::class, MangaEntity::class, MangaTagsEntity::class, TagEntity::class, FavouriteEntity::class, FavouriteCategoryEntity::class])
+	protected abstract fun observeSectionDatesImpl(query: SupportSQLiteQuery): Flow<List<HistorySectionDates>>
 
 	override fun getCondition(option: ListFilterOption): String? = when (option) {
 		is ListFilterOption.Favorite -> "EXISTS(SELECT * FROM favourites WHERE history.manga_id = favourites.manga_id AND category_id = ${option.category.id} AND favourites.deleted_at = 0)"
