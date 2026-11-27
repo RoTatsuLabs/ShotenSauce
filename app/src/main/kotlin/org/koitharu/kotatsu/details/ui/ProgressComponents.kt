@@ -1,8 +1,10 @@
 package org.koitharu.kotatsu.details.ui
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Surface
@@ -56,50 +58,60 @@ internal fun ProgressBentoCard(historyInfo: HistoryInfo, isLoading: Boolean, acc
 		color = MaterialTheme.colorScheme.surfaceContainerHigh,
 		modifier = modifier,
 	) {
-		Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
-			Row(verticalAlignment = Alignment.CenterVertically) {
-				Icon(
-					painter = painterResource(R.drawable.ic_read),
-					contentDescription = null,
-					tint = accent,
-					modifier = Modifier.size(18.dp),
-				)
-				Spacer(Modifier.width(8.dp))
-				Text(
-					text = chaptersText,
-					style = MaterialTheme.typography.labelMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-					maxLines = 2,
-				)
+		// The bar sits at the bottom, so a taller neighbouring tile does not leave a gap under it
+		Column(
+			modifier = Modifier.fillMaxHeight().padding(horizontal = 16.dp, vertical = 14.dp),
+			verticalArrangement = Arrangement.SpaceBetween,
+		) {
+			Column {
+				Row(verticalAlignment = Alignment.CenterVertically) {
+					Icon(
+						painter = painterResource(R.drawable.ic_read),
+						contentDescription = null,
+						tint = accent,
+						modifier = Modifier.size(18.dp),
+					)
+					Spacer(Modifier.width(8.dp))
+					Text(
+						text = chaptersText,
+						style = MaterialTheme.typography.labelMedium,
+						color = MaterialTheme.colorScheme.onSurfaceVariant,
+						maxLines = 3,
+					)
+				}
+				if (showProgress) {
+					Spacer(Modifier.height(6.dp))
+					Text(
+						text = stringResource(R.string.percent_string_pattern, displayPercent.toString()),
+						style = MaterialTheme.typography.headlineLarge,
+						fontWeight = FontWeight.Light,
+						color = accent,
+					)
+				}
 			}
-			if (showProgress) {
-				Spacer(Modifier.height(6.dp))
-				Text(
-					text = stringResource(R.string.percent_string_pattern, displayPercent.toString()),
-					style = MaterialTheme.typography.headlineLarge,
-					fontWeight = FontWeight.Light,
-					color = accent,
-				)
-				Spacer(Modifier.height(10.dp))
-				val animatedProgress by animateFloatAsState(
-					targetValue = percent,
-					animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
-					label = "readingProgress",
-				)
-				LinearWavyProgressIndicator(
-					progress = { animatedProgress.coerceIn(0f, 1f) },
-					color = accent,
-					trackColor = accent.copy(alpha = 0.22f),
-					modifier = Modifier.fillMaxWidth(),
-				)
-			}
-			if (timeText != null) {
-				Spacer(Modifier.height(8.dp))
-				Text(
-					text = timeText,
-					style = MaterialTheme.typography.labelMedium,
-					color = MaterialTheme.colorScheme.onSurfaceVariant,
-				)
+			Column {
+				if (showProgress) {
+					Spacer(Modifier.height(10.dp))
+					val animatedProgress by animateFloatAsState(
+						targetValue = percent,
+						animationSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
+						label = "readingProgress",
+					)
+					LinearWavyProgressIndicator(
+						progress = { animatedProgress.coerceIn(0f, 1f) },
+						color = accent,
+						trackColor = accent.copy(alpha = 0.22f),
+						modifier = Modifier.fillMaxWidth(),
+					)
+				}
+				if (timeText != null) {
+					Spacer(Modifier.height(8.dp))
+					Text(
+						text = timeText,
+						style = MaterialTheme.typography.labelMedium,
+						color = MaterialTheme.colorScheme.onSurfaceVariant,
+					)
+				}
 			}
 		}
 	}

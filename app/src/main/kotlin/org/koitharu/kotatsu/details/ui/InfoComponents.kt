@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import org.koitharu.kotatsu.R
 import org.koitharu.kotatsu.core.model.getTitle
 import org.koitharu.kotatsu.core.model.isLocal
@@ -118,7 +119,11 @@ private fun InfoTileCard(tile: InfoTile, accent: Color, modifier: Modifier) {
 		color = container,
 		modifier = if (tile.onClick != null) modifier.clickable(onClick = tile.onClick) else modifier,
 	) {
-		Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+		// Centred, so a short value in a tile made tall by its neighbour does not leave a gap underneath
+		Column(
+			modifier = Modifier.fillMaxHeight().padding(horizontal = 14.dp, vertical = 12.dp),
+			verticalArrangement = Arrangement.Center,
+		) {
 			Text(
 				text = tile.label,
 				style = MaterialTheme.typography.labelMedium,
@@ -139,6 +144,7 @@ private fun InfoTileCard(tile: InfoTile, accent: Color, modifier: Modifier) {
 				Text(
 					text = tile.value,
 					style = MaterialTheme.typography.titleSmall,
+					lineHeight = 20.sp,
 					fontWeight = FontWeight.SemiBold,
 					color = valueColor,
 					maxLines = 2,
