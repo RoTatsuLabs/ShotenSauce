@@ -131,37 +131,87 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 
 	private val tabEdgeSwipe by lazy { TabEdgeSwipe(this, ::dragTab, ::finishTabDrag) }
 
-	/** The tab slides with the finger, with some resistance, as long as there is a neighbour to go to. */
+	private var tabSwipeAllowed = true
+	private var tabDragging = false
+	private var tabSwallowing = false
+
+	/** The page follows the finger and the neighbouring tab slides in beside it. */
 	private fun dragTab(dx: Float, step: Int) {
 		val view = navigationDelegate.primaryFragment?.view ?: return
-		view.translationX = if (navigationDelegate.hasAdjacent(step)) dx * TAB_DRAG_RESISTANCE else dx * TAB_DRAG_RESISTANCE / 3f
+		tabDragging = true
+		if (!navigationDelegate.hasAdjacent(step)) {
+			view.translationX = dx * TAB_DRAG_RESISTANCE / 3f
+			return
+		}
+		val width = view.width.toFloat()
+		val offset = dx.coerceIn(-width, width)
+		view.translationX = offset
+		val side = if (offset < 0f) -1f else 1f
+		navigationDelegate.previewAdjacent(step, offset - side * width)
 	}
 
 	private fun finishTabDrag(step: Int, commit: Boolean) {
 		val outgoing = navigationDelegate.primaryFragment?.view ?: return
+		val preview = navigationDelegate.previewView
 		val width = outgoing.width.toFloat()
 		val side = if (outgoing.translationX < 0f) -1f else 1f
 		if (!commit || !navigationDelegate.hasAdjacent(step)) {
 			outgoing.animate().translationX(0f).setDuration(TAB_SETTLE_MS).start()
+			if (preview != null) {
+				preview.animate().translationX(-side * width).setDuration(TAB_SETTLE_MS)
+					.withEndAction { navigationDelegate.clearPreview(hide = true) }.start()
+			}
 			return
 		}
+		preview?.animate()?.translationX(0f)?.setDuration(TAB_SETTLE_MS)?.start()
 		outgoing.animate().translationX(side * width).setDuration(TAB_SETTLE_MS).withEndAction {
 			navigationDelegate.selectAdjacent(step, animated = false)
 			outgoing.translationX = 0f
-			navigationDelegate.primaryFragment?.view?.run {
-				translationX = -side * width * 0.25f
-				alpha = 0.4f
-				animate().translationX(0f).alpha(1f).setDuration(TAB_SETTLE_MS).start()
+			navigationDelegate.clearPreview(hide = false)
+			if (preview == null) {
+				navigationDelegate.primaryFragment?.view?.run {
+					translationX = -side * width * 0.25f
+					alpha = 0.4f
+					animate().translationX(0f).alpha(1f).setDuration(TAB_SETTLE_MS).start()
+				}
 			}
 		}.start()
 	}
 
+	private fun isOnNavigation(ev: MotionEvent): Boolean {
+		val rect = android.graphics.Rect()
+		return listOfNotNull<View>(viewBinding.bottomNav, viewBinding.navRail).any {
+			it.isShown && it.getGlobalVisibleRect(rect) && rect.contains(ev.rawX.toInt(), ev.rawY.toInt())
+		}
+	}
+
 	override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+		if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
+			tabDragging = false
+			tabSwallowing = false
+			// The floating bar has swipes of its own
+			tabSwipeAllowed = !isOnNavigation(ev)
+		}
 		tabEdgeSwipe.onTouch(
 			root = viewBinding.root,
 			e = ev,
-			isEnabled = !actionModeDelegate.isActionModeStarted,
+			isEnabled = !actionModeDelegate.isActionModeStarted && tabSwipeAllowed,
 		)
+		if (tabDragging && !tabSwallowing) {
+			// The swipe is now a tab change: what was under the finger stops scrolling
+			tabSwallowing = true
+			val cancel = MotionEvent.obtain(ev)
+			cancel.action = MotionEvent.ACTION_CANCEL
+			super.dispatchTouchEvent(cancel)
+			cancel.recycle()
+		}
+		if (tabSwallowing) {
+			if (ev.actionMasked == MotionEvent.ACTION_UP || ev.actionMasked == MotionEvent.ACTION_CANCEL) {
+				tabSwallowing = false
+				tabDragging = false
+			}
+			return true
+		}
 		return super.dispatchTouchEvent(ev)
 	}
 

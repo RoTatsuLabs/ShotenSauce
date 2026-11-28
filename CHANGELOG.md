@@ -6,6 +6,7 @@
 - Tracker search tries look-alike spellings when a title finds nothing: curly quotes, backticks and fancy dashes become plain ones, then apostrophes are dropped, then every symbol becomes a space
 
 ### Fixed
+- Swiping between tabs shows the next tab beside the current one as you drag, stops the list under your finger from scrolling at the same time, and leaves swipes on the floating navigation bar alone
 - Check for updates reads the version from the release tag, so a release named "ShotenSauce 1.2.0" is no longer treated as older than 1.1.5
 
 ## 1.2.0 (2026-11-27)

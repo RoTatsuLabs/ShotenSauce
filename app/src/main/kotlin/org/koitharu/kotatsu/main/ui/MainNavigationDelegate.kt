@@ -192,6 +192,42 @@ class MainNavigationDelegate(
 		return true
 	}
 
+	/** The neighbouring tab's page while a swipe shows it beside the current one. */
+	var previewView: View? = null
+		private set
+
+	/**
+	 * Shows the page of the tab [step] places away at [offset] while a swipe is under way. Null when that
+	 * tab has not been opened yet, so there is nothing to show.
+	 */
+	fun previewAdjacent(step: Int, offset: Float): View? {
+		var view = previewView
+		if (view == null) {
+			val items = (0 until navBar.menu.size()).map { navBar.menu.getItem(it) }.filter { it.isVisible }
+			val index = items.indexOfFirst { it.itemId == navBar.selectedItemId }
+			val itemId = items.getOrNull(index + step)?.itemId ?: return null
+			val fragment = tabFragmentClass(itemId)?.let { fragmentManager.findFragmentByTag(it.name) }
+				?.takeIf { it.isAdded && it.isHidden } ?: return null
+			view = fragment.view ?: return null
+			// Like a tab that is being opened: it starts at the top
+			fragment.resetContentToTop()
+			view.visibility = View.VISIBLE
+			previewView = view
+		}
+		view.translationX = offset
+		return view
+	}
+
+	/** Puts the previewed page away; [hide] when it stays unselected. */
+	fun clearPreview(hide: Boolean) {
+		previewView?.run {
+			animate().cancel()
+			translationX = 0f
+			if (hide) visibility = View.GONE
+		}
+		previewView = null
+	}
+
 	fun syncSelectedItem() {
 		val fragment = primaryFragment ?: return
 		onFragmentChanged(fragment, fromUser = false)
@@ -233,18 +269,20 @@ class MainNavigationDelegate(
 		listeners.remove(listener)
 	}
 
+	private fun tabFragmentClass(@IdRes itemId: Int): Class<out Fragment>? = when (itemId) {
+		R.id.nav_history -> HistoryListFragment::class.java
+		R.id.nav_favorites -> FavouritesContainerFragment::class.java
+		R.id.nav_explore -> ExploreFragment::class.java
+		R.id.nav_feed -> FeedFragment::class.java
+		R.id.nav_local -> LocalListFragment::class.java
+		R.id.nav_suggestions -> SuggestionsFragment::class.java
+		R.id.nav_bookmarks -> AllBookmarksFragment::class.java
+		R.id.nav_updated -> UpdatesFragment::class.java
+		else -> null
+	}
+
 	private fun onNavigationItemSelected(@IdRes itemId: Int): Boolean {
-		val newFragment = when (itemId) {
-			R.id.nav_history -> HistoryListFragment::class.java
-			R.id.nav_favorites -> FavouritesContainerFragment::class.java
-			R.id.nav_explore -> ExploreFragment::class.java
-			R.id.nav_feed -> FeedFragment::class.java
-			R.id.nav_local -> LocalListFragment::class.java
-			R.id.nav_suggestions -> SuggestionsFragment::class.java
-			R.id.nav_bookmarks -> AllBookmarksFragment::class.java
-			R.id.nav_updated -> UpdatesFragment::class.java
-			else -> return false
-		}
+		val newFragment = tabFragmentClass(itemId) ?: return false
 		if (!setPrimaryFragment(newFragment, itemId)) {
 			// probably already selected
 			onNavigationItemReselected()
