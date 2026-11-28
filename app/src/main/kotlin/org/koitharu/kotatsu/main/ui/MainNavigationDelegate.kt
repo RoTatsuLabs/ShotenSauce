@@ -206,8 +206,24 @@ class MainNavigationDelegate(
 			val items = (0 until navBar.menu.size()).map { navBar.menu.getItem(it) }.filter { it.isVisible }
 			val index = items.indexOfFirst { it.itemId == navBar.selectedItemId }
 			val itemId = items.getOrNull(index + step)?.itemId ?: return null
-			val fragment = tabFragmentClass(itemId)?.let { fragmentManager.findFragmentByTag(it.name) }
-				?.takeIf { it.isAdded && it.isHidden } ?: return null
+			val fragmentClass = tabFragmentClass(itemId) ?: return null
+			var fragment = fragmentManager.findFragmentByTag(fragmentClass.name)
+			if (fragment == null) {
+				// A tab nobody has opened yet is added hidden, like the others, so there is a page to slide in
+				if (fragmentManager.isStateSaved) return null
+				fragment = instantiateFragment(fragmentClass).apply {
+					arguments = buildBundle(1) {
+						putBoolean(AppRouter.KEY_IS_BOTTOMTAB, true)
+					}
+				}
+				fragmentManager.beginTransaction()
+					.setReorderingAllowed(true)
+					.add(R.id.container, fragment, fragmentClass.name)
+					.hide(fragment)
+					.setMaxLifecycle(fragment, Lifecycle.State.STARTED)
+					.commitNow()
+			}
+			if (!fragment.isAdded || !fragment.isHidden) return null
 			view = fragment.view ?: return null
 			// Like a tab that is being opened: it starts at the top
 			fragment.resetContentToTop()
