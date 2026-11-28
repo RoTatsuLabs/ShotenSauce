@@ -186,10 +186,25 @@ class MainNavigationDelegate(
 		suppressTransition = !animated
 		try {
 			navBar.selectedItemId = target.itemId
+			// The change is done now, not on the next loop, so a following swipe starts from the new tab
+			if (!animated) runCatching { fragmentManager.executePendingTransactions() }
 		} finally {
 			suppressTransition = false
 		}
 		return true
+	}
+
+	/** Every tab page back in place after a swipe: only the shown one is visible and none is displaced. */
+	fun resetTabViews() {
+		val primary = primaryFragment
+		for (fragment in fragmentManager.fragments) {
+			if (getItemId(fragment) == 0) continue
+			val view = fragment.view ?: continue
+			view.animate().cancel()
+			view.translationX = 0f
+			view.alpha = 1f
+			if (fragment !== primary && fragment.isHidden) view.visibility = View.GONE
+		}
 	}
 
 	/** The neighbouring tab's page while a swipe shows it beside the current one. */

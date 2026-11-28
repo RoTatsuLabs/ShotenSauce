@@ -150,32 +150,46 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 		navigationDelegate.previewAdjacent(step, offset - side * width)
 	}
 
+	private var tabSettle: ((fromAnimation: Boolean) -> Unit)? = null
+
 	private fun finishTabDrag(step: Int, commit: Boolean) {
 		val outgoing = navigationDelegate.primaryFragment?.view ?: return
 		val preview = navigationDelegate.previewView
 		val width = outgoing.width.toFloat()
 		val side = if (outgoing.translationX < 0f) -1f else 1f
-		if (!commit || !navigationDelegate.hasAdjacent(step)) {
-			outgoing.animate().translationX(0f).setDuration(TAB_SETTLE_MS).start()
-			if (preview != null) {
-				preview.animate().translationX(-side * width).setDuration(TAB_SETTLE_MS)
-					.withEndAction { navigationDelegate.clearPreview(hide = true) }.start()
-			}
-			return
-		}
-		preview?.animate()?.translationX(0f)?.setDuration(TAB_SETTLE_MS)?.start()
-		outgoing.animate().translationX(side * width).setDuration(TAB_SETTLE_MS).withEndAction {
-			// The old page stays slid out until the tab change hides it, so it cannot flash back for a frame
-			navigationDelegate.selectAdjacent(step, animated = false)
-			navigationDelegate.clearPreview(hide = false)
-			if (preview == null) {
-				navigationDelegate.primaryFragment?.view?.run {
-					translationX = -side * width * 0.25f
-					alpha = 0.4f
-					animate().translationX(0f).alpha(1f).setDuration(TAB_SETTLE_MS).start()
+		val go = commit && navigationDelegate.hasAdjacent(step)
+		var done = false
+		// Also run early when a new touch arrives before the slide has ended, so swipes can follow each other fast
+		val finalize = { fromAnimation: Boolean ->
+			if (!done) {
+				done = true
+				tabSettle = null
+				if (!fromAnimation) {
+					outgoing.animate().cancel()
+					preview?.animate()?.cancel()
+				}
+				if (go) navigationDelegate.selectAdjacent(step, animated = false)
+				navigationDelegate.clearPreview(hide = !go)
+				navigationDelegate.resetTabViews()
+				if (go && preview == null) {
+					navigationDelegate.primaryFragment?.view?.run {
+						translationX = -side * width * 0.25f
+						alpha = 0.4f
+						animate().translationX(0f).alpha(1f).setDuration(TAB_SETTLE_MS).start()
+					}
 				}
 			}
-		}.start()
+		}
+		tabSettle = finalize
+		if (go) {
+			preview?.animate()?.translationX(0f)?.setDuration(TAB_SETTLE_MS)?.start()
+			outgoing.animate().translationX(side * width).setDuration(TAB_SETTLE_MS)
+				.withEndAction { finalize(true) }.start()
+		} else {
+			preview?.animate()?.translationX(-side * width)?.setDuration(TAB_SETTLE_MS)?.start()
+			outgoing.animate().translationX(0f).setDuration(TAB_SETTLE_MS)
+				.withEndAction { finalize(true) }.start()
+		}
 	}
 
 	private fun isOnNavigation(ev: MotionEvent): Boolean {
@@ -187,6 +201,7 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 
 	override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
 		if (ev.actionMasked == MotionEvent.ACTION_DOWN) {
+			tabSettle?.invoke(false)
 			tabDragging = false
 			tabSwallowing = false
 			// The floating bar has swipes of its own
