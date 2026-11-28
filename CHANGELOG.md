@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Improved
+- Tracker search tries look-alike spellings when a title finds nothing: curly quotes, backticks and fancy dashes become plain ones, then apostrophes are dropped, then every symbol becomes a space
+
 ### Fixed
 - Check for updates reads the version from the release tag, so a release named "ShotenSauce 1.2.0" is no longer treated as older than 1.1.5
 

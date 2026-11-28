@@ -22,6 +22,9 @@ internal object TitleMatch {
 	private val brackets = Regex("[(\\[{][^)\\]}]*[)\\]}]")
 	private val searchSymbols = Regex("[^\\p{L}\\p{N}\\s]+")
 	private val spaces = Regex("\\s+")
+	private val apostrophes = Regex("[`´‘’ʼʻ′‛＇]")
+	private val doubleQuotes = Regex("[“”„‟″＂«»]")
+	private val dashes = Regex("[‐‑‒–—―−]")
 	private val separators = Regex("[^\\p{L}\\p{N}]+")
 
 	private val boysLove = setOf("boys love", "boys' love", "boyslove", "bl", "yaoi", "shounen ai", "shonen ai", "danmei")
@@ -125,6 +128,23 @@ internal object TitleMatch {
 	}
 
 	/**
+	 * Other spellings of [query] for a tracker that did not find it as typed: look-alike quotes, backticks
+	 * and dashes turned into the plain ones, then the apostrophes dropped, then every symbol turned into a
+	 * space. The query itself is never part of the result.
+	 */
+	fun queryVariants(query: String): List<String> {
+		val title = query.trim()
+		val straight = title.replace(apostrophes, "'").replace(doubleQuotes, "\"")
+			.replace(dashes, "-").replace("…", "...")
+		val noApostrophe = straight.replace("'", "")
+		val plain = title.replace(searchSymbols, " ").replace(spaces, " ").trim()
+		val seen = hashSetOf(title)
+		return listOf(straight, noApostrophe, plain)
+			.map { it.replace(spaces, " ").trim() }
+			.filter { it.length >= 2 && seen.add(it) }
+	}
+
+	/**
 	 * The searches to try for a favourite, in order. Trackers match poorly on a title full of quotes,
 	 * backticks and other symbols, so after the title as written come a version with those turned
 	 * into spaces and, for a long title, just its opening words. The alternative titles follow.
@@ -133,6 +153,7 @@ internal object TitleMatch {
 		val title = manga.title.trim()
 		val queries = LinkedHashSet<String>()
 		if (title.isNotEmpty()) queries.add(title)
+		for (variant in queryVariants(title)) queries.add(variant)
 		val plain = title.replace(searchSymbols, " ").replace(spaces, " ").trim()
 		if (plain.length >= 3) queries.add(plain)
 		val words = plain.split(' ')

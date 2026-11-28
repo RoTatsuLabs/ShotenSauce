@@ -30,6 +30,7 @@ import org.koitharu.kotatsu.list.ui.model.LoadingFooter
 import org.koitharu.kotatsu.list.ui.model.LoadingState
 import org.koitharu.kotatsu.parsers.util.ifZero
 import org.koitharu.kotatsu.parsers.util.runCatchingCancellable
+import org.koitharu.kotatsu.scrobbling.autotrack.TitleMatch
 import org.koitharu.kotatsu.scrobbling.common.domain.Scrobbler
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerManga
 import org.koitharu.kotatsu.scrobbling.common.domain.model.ScrobblerMangaType
@@ -135,7 +136,16 @@ class ScrobblingSelectorViewModel @Inject constructor(
 			listError.value = null
 			val offset = if (append) scrobblerMangaList.value.size else 0
 			runCatchingCancellable {
-				currentScrobbler.findManga(checkNotNull(searchQuery.value), offset, currentType)
+				val query = checkNotNull(searchQuery.value)
+				var found = currentScrobbler.findManga(query, offset, currentType)
+				if (!append && found.isEmpty()) {
+					// Nothing for the query as typed: try the same text with look-alike symbols swapped
+					for (variant in TitleMatch.queryVariants(query)) {
+						found = currentScrobbler.findManga(variant, offset, currentType)
+						if (found.isNotEmpty()) break
+					}
+				}
+				found
 			}.onSuccess { list ->
 				val newList = (if (append) {
 					scrobblerMangaList.value + list
