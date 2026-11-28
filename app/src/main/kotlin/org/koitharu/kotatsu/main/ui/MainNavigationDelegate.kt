@@ -370,6 +370,8 @@ class MainNavigationDelegate(
 			// Reset it to the top so every tab always opens at the top. Done here, before the first
 			// frame is drawn (and while the fade-in is still near-transparent), so there's no visible jump.
 			shown.resetContentToTop()
+			// A swipe leaves the page it slid out displaced; it is hidden by now, so put it back
+			if (transition == TabTransition.NONE) current?.view?.translationX = 0f
 			onFragmentChanged(shown, fromUser = true, transition)
 		}
 		transaction.commit()

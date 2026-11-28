@@ -165,8 +165,8 @@ class MainActivity : BaseActivity<ActivityMainBinding>(), AppBarOwner, BottomNav
 		}
 		preview?.animate()?.translationX(0f)?.setDuration(TAB_SETTLE_MS)?.start()
 		outgoing.animate().translationX(side * width).setDuration(TAB_SETTLE_MS).withEndAction {
+			// The old page stays slid out until the tab change hides it, so it cannot flash back for a frame
 			navigationDelegate.selectAdjacent(step, animated = false)
-			outgoing.translationX = 0f
 			navigationDelegate.clearPreview(hide = false)
 			if (preview == null) {
 				navigationDelegate.primaryFragment?.view?.run {
