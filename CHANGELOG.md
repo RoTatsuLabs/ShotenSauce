@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Fixed
+- Check for updates reads the version from the release tag, so a release named "ShotenSauce 1.2.0" is no longer treated as older than 1.1.5
+
 ## 1.2.0 (2026-11-27)
 
 ### New
